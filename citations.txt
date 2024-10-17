@@ -1,2 +1,5 @@
-https://answers.ros.org/question/327256/equivalent-turtlesimpose-and-geometry_msgspose/
-Creating geometry_msgs/pose from turtlesim/pose
+https://courses.lumenlearning.com/suny-osuniversityphysics/chapter/11-1-rolling-motion/
+rolling motion
+
+https://answers.ros.org/question/212297/if-statement-in-launch-file/
+if statement in launch file

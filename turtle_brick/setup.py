@@ -12,6 +12,8 @@ setup(
         ('share/' + package_name, ['package.xml',
                                    'launch/show_turtle.launch.xml',
                                    'launch/show_turtle.launch.py',
+                                   'launch/run_turtle.launch.xml',
+                                   'launch/run_turtle.launch.py',
                                    'urdf/turtle.urdf.xacro',
                                    'config/view_turtle.rviz',
                                    'config/turtle.yaml'
