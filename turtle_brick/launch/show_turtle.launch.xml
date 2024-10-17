@@ -1,10 +1,23 @@
 <launch>
+    <arg name="use_jsp" default="gui"/>
+    <arg name="rviz_config" default="view_turtle.rviz"/>
+    
     <node pkg="robot_state_publisher" exec="robot_state_publisher" >
         <param name="robot_description" value="$(command '$(exec-in-pkg xacro xacro) $(find-pkg-share turtle_brick)/turtle.urdf.xacro')"/>
     </node>
 
-    <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui"/>
+    <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" if="$(eval '\'$(var use_jsp)\'==\'gui\'')"/> -->
 
-    <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share turtle_brick)/view_turtle.rviz"/>
+    <!-- <node pkg="joint_state_publisher" exec="joint_state_publisher" if="$(eval '\'$(var use_jsp)\'==\'jsp\'')"/> -->
 
+    <node pkg="turtle_brick" exec="turtle_robot">
+        <remap from="/cmd_vel" to="turtle1/cmd_vel"/>
+    </node>
+
+    <node pkg="turtlesim" exec="turtlesim_node">
+        <param name="holonomic" value="true"/>
+    </node>
+
+    <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share turtle_brick)/$(var rviz_config)"/>
+ 
 </launch>

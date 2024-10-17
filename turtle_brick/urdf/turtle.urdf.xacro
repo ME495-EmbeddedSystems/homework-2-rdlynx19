@@ -59,7 +59,6 @@
 </link>
 
 
-
 <joint name="base_cylinder" type="fixed">
     <origin xyz="0 0 0.45" rpy="0 0 0"/>
     <parent link="base_link"/>
@@ -88,6 +87,5 @@
     <child link="wheel"/>
     <axis xyz="0 0 1"/>
 </joint>
-
 
 </robot>

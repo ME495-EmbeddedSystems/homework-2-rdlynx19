@@ -13,7 +13,8 @@ setup(
                                    'launch/show_turtle.launch.xml',
                                    'launch/show_turtle.launch.py',
                                    'urdf/turtle.urdf.xacro',
-                                   'config/view_turtle.rviz'
+                                   'config/view_turtle.rviz',
+                                   'config/turtle.yaml'
                                    ]),
     ],
     install_requires=['setuptools'],
@@ -25,6 +26,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'turtle_robot = turtle_brick.turtle_robot:turtle_robot_start'
         ],
     },
 )
