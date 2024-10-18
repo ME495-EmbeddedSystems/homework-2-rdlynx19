@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import Twist, Vector3, PoseStamped
+
 # import rclpy.time
 import math
 import numpy as np
@@ -10,6 +11,9 @@ from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from sensor_msgs.msg import JointState
 from turtlesim.msg import Pose
 from nav_msgs.msg import Odometry
+from turtle_brick_interfaces.msg import Tilt
+from turtlesim.srv import TeleportAbsolute
+
 
 def quaternion_from_euler(ai, aj, ak):
     """
@@ -24,19 +28,18 @@ def quaternion_from_euler(ai, aj, ak):
     sj = math.sin(aj)
     ck = math.cos(ak)
     sk = math.sin(ak)
-    cc = ci*ck
-    cs = ci*sk
-    sc = si*ck
-    ss = si*sk
+    cc = ci * ck
+    cs = ci * sk
+    sc = si * ck
+    ss = si * sk
 
-    q = np.empty((4, ))
-    q[0] = cj*sc - sj*cs
-    q[1] = cj*ss + sj*cc
-    q[2] = cj*cs - sj*sc
-    q[3] = cj*cc + sj*ss
+    q = np.empty((4,))
+    q[0] = cj * sc - sj * cs
+    q[1] = cj * ss + sj * cc
+    q[2] = cj * cs - sj * sc
+    q[3] = cj * cc + sj * ss
 
     return q
-
 
 
 def turtle_twist(linear_velocity, angular_velocity):
@@ -62,17 +65,21 @@ def turtle_twist(linear_velocity, angular_velocity):
 def calculate_euclidean_distance(current_pos, goal_pos):
     """Calculate the distance between the current position and currently tracked waypoint
 
-        Args:
-            current_pos (turtlesim/Pose): the current position of the turtle
-            current_waypoint (geometry_msgs/Point): the currently tracked waypoint (the waypoint to be visited)
+    Args:
+        current_pos (turtlesim/Pose): the current position of the turtle
+        current_waypoint (geometry_msgs/Point): the currently tracked waypoint (the waypoint to be visited)
 
-        Returns:
-            tol - a double value corresponding to the distance between the current pose and current waypoint
+    Returns:
+        tol - a double value corresponding to the distance between the current pose and current waypoint
 
     """
-    tol = math.sqrt((current_pos.x - goal_pos.pose.position.x)**2 + (current_pos.y - goal_pos.pose.position.y)**2)
+    tol = math.sqrt(
+        (current_pos.x - goal_pos.pose.position.x) ** 2
+        + (current_pos.y - goal_pos.pose.position.y) ** 2
+    )
 
     return tol
+
 
 class Turtle_Robot(Node):
     """
@@ -81,17 +88,6 @@ class Turtle_Robot(Node):
 
     def __init__(self):
         super().__init__("turtle_robot")
-        # static broadcaster for the world frame
-        self.static_world_broadcaster = StaticTransformBroadcaster(self)
-
-        world_odom_tf = TransformStamped()
-        world_odom_tf.header.stamp = self.get_clock().now().to_msg()
-        world_odom_tf.header.frame_id = "world"
-        world_odom_tf.child_frame_id = "odom"
-
-        world_odom_tf.transform.translation.x = 2.0
-        self.static_world_broadcaster.sendTransform(world_odom_tf)
-        self.get_logger().info("Static Transfrom: world->odom")
 
         # transformation from odom to base_link
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -104,7 +100,11 @@ class Turtle_Robot(Node):
         self.joint_state_tmr = self.create_timer(1 / 100, self.joint_state_tmr_callback)
 
         # turtle pose subscriber
-        self.turtlesim_current_pose = Pose() # class variable to store current pose of the turtlesim
+        self.turtlesim_current_pose = (
+            Pose()
+        )  # class variable to store current pose of the turtlesim
+        self.turtlesim_current_pose.x = 0.0
+        self.turtlesim_current_pose.y = 0.0
         self.turtlesim_pose_subscriber = self.create_subscription(
             Pose, "/turtle1/pose", self.turtlesim_pose_callback, 1
         )
@@ -126,6 +126,24 @@ class Turtle_Robot(Node):
             PoseStamped, "goal_pose", self.goal_pose_callback, 1
         )
 
+        # static broadcaster for the world frame
+        self.static_world_broadcaster = StaticTransformBroadcaster(self)
+
+        world_odom_tf = TransformStamped()
+        world_odom_tf.header.stamp = self.get_clock().now().to_msg()
+        world_odom_tf.header.frame_id = "world"
+        world_odom_tf.child_frame_id = "odom"
+
+        world_odom_tf.transform.translation.x = 5.54
+        world_odom_tf.transform.translation.y = 5.54
+        self.static_world_broadcaster.sendTransform(world_odom_tf)
+        self.get_logger().info("Static Transfrom: world->odom")
+
+        # tilt message subscriber
+        self.tilt_angle_subscriber = self.create_subscription(
+            Tilt, "platform_tilt_angle", self.tilt_msg_callback, 1
+        )
+
         # wheel_radius
         self.wheel_radius = 0.15
         self.wheel_joint_state = 0.0
@@ -133,11 +151,15 @@ class Turtle_Robot(Node):
     def turtle_tmr_callback(self):
         turtlesim_robot_tf = TransformStamped()
         turtlesim_robot_tf.header.stamp = self.get_clock().now().to_msg()
-        turtlesim_robot_tf.header.frame_id = 'odom'
-        turtlesim_robot_tf.child_frame_id = 'base_link'
-        turtlesim_robot_tf.transform.translation.x = self.turtlesim_current_pose.x
-        turtlesim_robot_tf.transform.translation.y = self.turtlesim_current_pose.y
-        turtlesim_robot_tf.transform.translation.z = 0.0
+        turtlesim_robot_tf.header.frame_id = "odom"
+        turtlesim_robot_tf.child_frame_id = "base_link"
+        turtlesim_robot_tf.transform.translation.x = (
+            5.54 - self.turtlesim_current_pose.x
+        )
+        turtlesim_robot_tf.transform.translation.y = (
+            5.54 - self.turtlesim_current_pose.y
+        )
+        turtlesim_robot_tf.transform.translation.z = 0.5
         quat = quaternion_from_euler(0, 0, self.turtlesim_current_pose.theta)
 
         turtlesim_robot_tf.transform.rotation.x = quat[0]
@@ -147,12 +169,11 @@ class Turtle_Robot(Node):
 
         self.tf_broadcaster.sendTransform(turtlesim_robot_tf)
 
-
         odom_msg = Odometry()
         odom_msg.header.frame_id = "odom"
         odom_msg.child_frame_id = "base_link"
         odom_msg.twist.twist = self.current_velocity
-        odom_msg.pose.pose.position.x =self.turtlesim_current_pose.x
+        odom_msg.pose.pose.position.x = self.turtlesim_current_pose.x
         odom_msg.pose.pose.position.y = self.turtlesim_current_pose.y
         odom_msg.pose.pose.position.z = 0.0
         odom_msg.pose.pose.orientation.x = quat[0]
@@ -161,18 +182,17 @@ class Turtle_Robot(Node):
         odom_msg.pose.pose.orientation.w = quat[3]
 
         self.odom_publisher.publish(odom_msg)
-        
-       
+
     def joint_state_tmr_callback(self):
         robot_joint_states = JointState()
         robot_joint_states.header.stamp = self.get_clock().now().to_msg()
         robot_joint_states.header.frame_id = "odom"
         robot_joint_states.name = ["base_platform", "base_stem", "stem_wheel"]
 
-        forward_velocity = self.turtlesim_current_pose.linear_velocity   
+        forward_velocity = self.turtlesim_current_pose.linear_velocity
         # forward_velocity = math.sqrt(self.current_velocity.linear.x **2 + self.current_velocity.linear.y**2)
-        self.wheel_joint_state += (forward_velocity)/(self.wheel_radius)*(1/100)
-        if (self.wheel_joint_state > 3.14):
+        self.wheel_joint_state += (forward_velocity) / (self.wheel_radius) * (1 / 100)
+        if self.wheel_joint_state > 3.14:
             self.wheel_joint_state = self.wheel_joint_state - 3.14
         robot_joint_states.position = [0, 0, self.wheel_joint_state]
 
@@ -181,22 +201,33 @@ class Turtle_Robot(Node):
     def cmd_vel_tmr_callback(self):
         # publish cmd_vel messages here
         # use goal pose to calculate apt cmd_vel messages
-        angular_diff = math.atan2(self.goal_pose.pose.position.y - self.turtlesim_current_pose.y, self.goal_pose.pose.position.x - self.turtlesim_current_pose.x)
-        yaw_vel = (angular_diff - self.turtlesim_current_pose.theta) + 0.05 * (angular_diff - self.turtlesim_current_pose.theta)/(1/100)
-        x_vel = 0.8 * calculate_euclidean_distance(self.turtlesim_current_pose, self.goal_pose)
-        cmd_twist = turtle_twist([x_vel, 0.0, 0.0],[0.0,0.0, yaw_vel])
+        angular_diff = math.atan2(
+            self.goal_pose.pose.position.y - self.turtlesim_current_pose.y,
+            self.goal_pose.pose.position.x - self.turtlesim_current_pose.x,
+        )
+        yaw_vel = 0.8 * (angular_diff - self.turtlesim_current_pose.theta) + 0.05 * (
+            angular_diff - self.turtlesim_current_pose.theta
+        ) / (1 / 100)
+        x_vel = 0.4 * calculate_euclidean_distance(
+            self.turtlesim_current_pose, self.goal_pose
+        )
+        cmd_twist = turtle_twist([x_vel, 0.0, 0.0], [0.0, 0.0, yaw_vel])
+        
+        if(calculate_euclidean_distance(self.turtlesim_current_pose, self.goal_pose) < 0.05):
+            cmd_twist = turtle_twist([0.0, 0.0, 0.0],[0.0, 0.0, 0.0])
         self.cmd_vel_publisher.publish(cmd_twist)
         self.current_velocity = cmd_twist
-        
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
         self.turtlesim_current_pose = turtlesim_pose_msg
-    
+
     def goal_pose_callback(self, goal_pose_msg):
         # command velocity to send robot to goal pose
         self.goal_pose = goal_pose_msg
         # pass
-  
+
+    def tilt_msg_callback(self, tilt_msg):
+        pass
 
 
 def turtle_robot_start(args=None):

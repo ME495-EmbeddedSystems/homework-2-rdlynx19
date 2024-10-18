@@ -28,7 +28,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'turtle_robot = turtle_brick.turtle_robot:turtle_robot_start'
+            'turtle_robot = turtle_brick.turtle_robot:turtle_robot_start',
+            'arena = turtle_brick.arena_environment:start_arena'
         ],
     },
 )

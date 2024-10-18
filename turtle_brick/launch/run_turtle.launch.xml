@@ -12,5 +12,7 @@
         <remap from="/cmd_vel" to="turtle1/cmd_vel"/>
     </node>
 
+    <node pkg="turtle_brick" exec="arena">
+    </node>
 
 </launch>
