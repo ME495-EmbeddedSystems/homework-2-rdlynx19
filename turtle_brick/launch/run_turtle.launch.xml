@@ -10,6 +10,7 @@
 
     <node pkg="turtle_brick" exec="turtle_robot">
         <remap from="/cmd_vel" to="turtle1/cmd_vel"/>
+        <param from="$(find-pkg-share turtle_brick)/turtle.yaml"/>
     </node>
 
     <node pkg="turtle_brick" exec="arena">

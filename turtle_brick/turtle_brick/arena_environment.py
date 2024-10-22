@@ -9,7 +9,6 @@ from turtle_brick_interfaces.srv import Place, Drop
 from .physics import World 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-import math
 
 class Arena(Node):
     """
@@ -18,6 +17,8 @@ class Arena(Node):
 
     def __init__(self):
         super().__init__('arena')
+
+        self.gravity_acceleration = self.declare_parameter('gravity_acceleration', 9.8) 
 
         # Empty variable for brick_location
         self.current_brick_location = [2.0, 2.0, 5.0]
@@ -160,6 +161,8 @@ class Arena(Node):
         odom_brick_tf.transform.translation.x = self.current_brick_location[0]
         odom_brick_tf.transform.translation.y = self.current_brick_location[1]
         odom_brick_tf.transform.translation.z = self.current_brick_location[2]
+        # self.get_logger().info(f"Brick z_position: {self.current_brick_location[2]}")
+        # self.get_logger().info(f"Current time stamp: {odom_brick_tf.header.stamp}")
     
         self.brick_tf_broadcaster.sendTransform(odom_brick_tf)
 
@@ -187,7 +190,7 @@ class Arena(Node):
 
         try:
             brick_platform_tf = self.tf_buffer.lookup_transform('brick', 'platform', rclpy.time.Time())
-            threshold_brick_platform = math.sqrt(brick_platform_tf.transform.translation.x**2 + brick_platform_tf.transform.translation.y**2 + brick_platform_tf.transform.translation.z**2)
+            threshold_brick_platform = (brick_platform_tf.transform.translation.x**2 + brick_platform_tf.transform.translation.y**2 + brick_platform_tf.transform.translation.z**2)**0.5
             if(threshold_brick_platform <= 0.1):
                 self.flag = False
         except tf2_ros.LookupException as e:

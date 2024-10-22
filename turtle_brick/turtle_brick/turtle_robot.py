@@ -144,11 +144,12 @@ class Turtle_Robot(Node):
             Tilt, "platform_tilt_angle", self.tilt_msg_callback, 1
         )
 
-        # wheel_radius
-        self.wheel_radius = 0.15
+        # creating parameters for these useful properties like wheel_radius
+        self.declare_parameter('wheel_radius', 0.15)
         self.wheel_joint_state = 0.0
 
     def turtle_tmr_callback(self):
+        wheel_radius = self.get_parameter('wheel_radius').value
         turtlesim_robot_tf = TransformStamped()
         turtlesim_robot_tf.header.stamp = self.get_clock().now().to_msg()
         turtlesim_robot_tf.header.frame_id = "odom"
@@ -159,7 +160,7 @@ class Turtle_Robot(Node):
         turtlesim_robot_tf.transform.translation.y = (
             5.54 - self.turtlesim_current_pose.y
         )
-        turtlesim_robot_tf.transform.translation.z = 0.5
+        turtlesim_robot_tf.transform.translation.z = wheel_radius*2 + 0.2
         quat = quaternion_from_euler(0, 0, self.turtlesim_current_pose.theta)
 
         turtlesim_robot_tf.transform.rotation.x = quat[0]
@@ -184,14 +185,15 @@ class Turtle_Robot(Node):
         self.odom_publisher.publish(odom_msg)
 
     def joint_state_tmr_callback(self):
+        wheel_radius = self.get_parameter('wheel_radius').value
         robot_joint_states = JointState()
         robot_joint_states.header.stamp = self.get_clock().now().to_msg()
         robot_joint_states.header.frame_id = "odom"
-        robot_joint_states.name = ["base_platform", "base_stem", "stem_wheel"]
+        robot_joint_states.name = ["cylinder_platform", "base_stem", "stem_wheel"]
 
         forward_velocity = self.turtlesim_current_pose.linear_velocity
         # forward_velocity = math.sqrt(self.current_velocity.linear.x **2 + self.current_velocity.linear.y**2)
-        self.wheel_joint_state += (forward_velocity) / (self.wheel_radius) * (1 / 100)
+        self.wheel_joint_state += (forward_velocity) / (wheel_radius) * (1 / 100)
         if self.wheel_joint_state > 3.14:
             self.wheel_joint_state = self.wheel_joint_state - 3.14
         robot_joint_states.position = [0, 0, self.wheel_joint_state]

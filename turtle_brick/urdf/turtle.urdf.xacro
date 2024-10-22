@@ -1,9 +1,15 @@
 <robot name="turtle" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<xacro:property name="turtle_yaml" value="$(find turtle_brick)/turtle.yaml"/>
+<xacro:property name="yaml_dict" value="${xacro.load_yaml(turtle_yaml)}"/>
+<xacro:property name="wheel_radius" value="${yaml_dict['turtle_robot']['ros__parameters']['wheel_radius']}"/>
+<xacro:property name="platform_height" value="${yaml_dict['turtle_robot']['ros__parameters']['platform_height']}"/>
+<xacro:property name="stem_length" value="0.05"/>
+<xacro:property name="box_side" value="0.3"/>
 
 <link name="base_link">
     <visual>
         <geometry>
-            <box size="0.3 0.3 0.3" />
+            <box size="${box_side} ${box_side} ${box_side}" />
         </geometry>
         <material name="red_mat">
             <color rgba="1 0 0 1"/>
@@ -11,7 +17,7 @@
     </visual>
     <collision>
         <geometry>
-            <box size="0.3 0.3 0.3" />
+            <box size="${box_side} ${box_side} ${box_side}" />
         </geometry>
         <material name="red_mat">
             <color rgba="1 0 0 1"/>
@@ -22,7 +28,7 @@
 <link name="fixed_cylinder">
     <visual>
         <geometry>
-            <cylinder radius="0.03" length="0.5"/>
+            <cylinder radius="0.03" length="${platform_height - 0.1}"/>
         </geometry>
         <material name="blue_mat">
             <color rgba="0 0 1 1"/>
@@ -62,7 +68,7 @@
 <link name="stem">
     <visual>
         <geometry>
-            <cylinder radius = "0.05" length="0.15"/>
+            <cylinder radius = "0.05" length="${box_side/2 + wheel_radius + stem_length}"/>
         </geometry>
         <material name="white">
             <color rgba="1 1 0 1"/>
@@ -82,7 +88,7 @@
     <origin xyz="0 0 0" rpy="1.57 0 0"/>
     <visual>
         <geometry>
-            <cylinder radius="0.15" length="0.2"/>
+            <cylinder radius="${wheel_radius}" length="0.2"/>
         </geometry>
         <material name="black">
             <color rgba="0 0 0 1"/>
@@ -100,29 +106,29 @@
 
 
 <joint name="base_cylinder" type="fixed">
-    <origin xyz="0 0 0.45" rpy="0 0 0"/>
+    <origin xyz="0 0 ${(platform_height - 0.1)/2}" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="fixed_cylinder" />
     <axis xyz="0 0 1"/>
 </joint>
 
-<joint name="base_platform" type="continuous">
-    <origin xyz="0 0 0.7" rpy="0 0 0"/>
-    <parent link="base_link"/>
+<joint name="cylinder_platform" type="continuous">
+    <origin xyz="0 0 ${(platform_height - 0.1)/2}" rpy="0 0 0"/>
+    <parent link="fixed_cylinder"/>
     <child link="platform"/>
     <axis xyz = "0 1 0"/>
     <!-- <limit lower="0.0" upper="0.0" effort="100" velocity="100"/> -->
 </joint>
 
 <joint name="base_stem" type="continuous">
-    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+    <origin xyz="0 0 ${-(box_side/2 + wheel_radius + stem_length)/2}" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="stem"/>
     <axis xyz= "0 0 1"/>
 </joint>
 
 <joint name="stem_wheel" type="continuous">
-    <origin xyz="0 0 -0.15" rpy="1.57 0 0"/>
+    <origin xyz="0 0 ${-(box_side/2 + wheel_radius + stem_length)/2}" rpy="1.57 0 0"/>
     <parent link="stem"/>
     <child link="wheel"/>
     <axis xyz="0 0 1"/>

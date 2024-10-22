@@ -3,3 +3,6 @@ rolling motion
 
 https://answers.ros.org/question/212297/if-statement-in-launch-file/
 if statement in launch file
+
+https://answers.ros.org/question/396845/reading-from-yaml-file-in-xacro/
+loading yaml in xacro
