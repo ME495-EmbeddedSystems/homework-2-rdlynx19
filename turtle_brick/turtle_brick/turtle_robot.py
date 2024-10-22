@@ -12,7 +12,7 @@ from sensor_msgs.msg import JointState
 from turtlesim.msg import Pose
 from nav_msgs.msg import Odometry
 from turtle_brick_interfaces.msg import Tilt
-from turtlesim.srv import TeleportAbsolute
+
 
 
 def quaternion_from_euler(ai, aj, ak):
@@ -119,8 +119,8 @@ class Turtle_Robot(Node):
 
         # goal pose subscriber
         self.goal_pose = PoseStamped()
-        self.goal_pose.pose.position.x = 2.0
-        self.goal_pose.pose.position.y = 3.0
+        self.goal_pose.pose.position.x = 5.54
+        self.goal_pose.pose.position.y = 5.54
         self.goal_pose.pose.position.z = 0.0
         self.goal_pose_subscriber = self.create_subscription(
             PoseStamped, "goal_pose", self.goal_pose_callback, 1

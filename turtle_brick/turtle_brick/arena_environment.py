@@ -2,6 +2,10 @@ import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import TransformBroadcaster
+from turtle_brick_interfaces.srv import Place
+from .physics import World 
 
 class Arena(Node):
     """
@@ -11,10 +15,19 @@ class Arena(Node):
     def __init__(self):
         super().__init__('arena')
 
+        # Setting up the physics module
+        self.brick_physics = World([0.0, 0.0, 5.0], 9.8, 0.3, 0.01)
+    
+        # Create service for placing the brick at a given position
+        self.place_srv = self.create_service(Place, 'place', self.place_callback) 
+
         # create a marker publisher
         markerQoS = QoSProfile(depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.marker_publisher = self.create_publisher(Marker, 'visualization_marker', markerQoS)
 
+        self.brick_publisher = self.create_publisher(Marker, 'brick_marker', markerQoS)
+
+        # markers for 4 walls of the arena
         self.m = Marker()
         self.m.header.frame_id = "odom"
         self.m.header.stamp = self.get_clock().now().to_msg()
@@ -104,8 +117,54 @@ class Arena(Node):
         self.m3.color.a = 1.0
         self.marker_publisher.publish(self.m3)
 
+        
 
 
+
+        self.brick_tf_broadcaster = TransformBroadcaster(self)
+        self.brick_tmr = self.create_timer(1/100, self.brick_tmr_callback)
+
+        
+
+    def brick_tmr_callback(self):
+        odom_brick_tf = TransformStamped()
+        odom_brick_tf.header.frame_id = 'odom'
+        odom_brick_tf.child_frame_id = 'brick'
+        brick_location = self.brick_physics.brick
+        odom_brick_tf.transform.translation.x = brick_location[0]
+        odom_brick_tf.transform.translation.y = brick_location[1]
+        odom_brick_tf.transform.translation.z = brick_location[2]
+    
+        self.brick_tf_broadcaster.sendTransform(odom_brick_tf)
+
+        self.brick = Marker()
+        self.brick.header.frame_id = "odom"
+        self.brick.header.stamp = self.get_clock().now().to_msg()
+        self.brick.id = 5
+        self.brick.type = Marker.CUBE
+        self.brick.action = Marker.ADD
+        self.brick.scale.x = 0.15
+        self.brick.scale.y = 0.15
+        self.brick.scale.z = 0.3
+        self.brick.pose.position.x = brick_location[0]
+        self.brick.pose.position.y = brick_location[1]
+        self.brick.pose.position.z = brick_location[2]
+        self.brick.pose.orientation.x = 0.707
+        self.brick.pose.orientation.y = 0.0
+        self.brick.pose.orientation.z = 0.0
+        self.brick.pose.orientation.w = 0.707
+        self.brick.color.r = 1.0
+        self.brick.color.g = 0.0
+        self.brick.color.b = 0.0
+        self.brick.color.a = 1.0
+        self.brick_publisher.publish(self.brick)
+        
+        
+        
+    def place_callback(self, request, response):
+        print(request.brick_position) 
+        self.brick_physics.brick= request.brick_position
+        return response
 
 
 def start_arena(args=None):
