@@ -229,7 +229,8 @@ class Turtle_Robot(Node):
         # pass
 
     def tilt_msg_callback(self, tilt_msg):
-        pass
+        odom_platform_tf = TransformStamped()
+        
 
 
 def turtle_robot_start(args=None):

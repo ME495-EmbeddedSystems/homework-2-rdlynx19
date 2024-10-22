@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Point
 import tf2_ros
 from tf2_ros import TransformBroadcaster
 from turtle_brick_interfaces.srv import Place, Drop
@@ -19,12 +19,13 @@ class Arena(Node):
         super().__init__('arena')
 
         self.gravity_acceleration = self.declare_parameter('gravity_acceleration', 9.8) 
+        self.max_vel = self.declare_parameter('max_velocity', 10.0)
 
         # Empty variable for brick_location
         self.current_brick_location = [2.0, 2.0, 5.0]
 
         # Setting up the physics module
-        self.brick_physics = World([2.0, 2.0, 5.0], 9.8, 0.3, 0.01)
+        self.brick_physics = World([0.0, 0.0, 5.0], 9.8, 0.3, 0.01)
     
         # Create service for placing the brick at a given position
         self.place_srv = self.create_service(Place, 'place', self.place_callback)
@@ -141,7 +142,8 @@ class Arena(Node):
         self.brick_tf_broadcaster = TransformBroadcaster(self)
         self.brick_tmr = self.create_timer(1/100, self.brick_tmr_callback)
 
-        self.flag = False
+        self.flag = True
+        self.move_brick = False
 
         self.drop_client.call_async(Drop.Request())
 
@@ -149,6 +151,29 @@ class Arena(Node):
         self.current_brick_location = self.brick_physics.brick
         if(self.flag):
             self.brick_physics.drop()
+        elif(self.move_brick):
+            try:
+                odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
+                platform_location = Point()
+                platform_location.x = odom_platform_lookup.transform.translation.x
+                platform_location.y = odom_platform_lookup.transform.translation.y
+                platform_location.z = odom_platform_lookup.transform.translation.z + 0.15
+                self.brick_physics.brick = platform_location
+                self.current_brick_location = self.brick_physics.brick
+            except tf2_ros.LookupException as e:
+                 # the frames don't exist yet
+                 self.get_logger().info(f'Lookup exception: {e}')
+            except tf2_ros.ConnectivityException as e:
+                # the tf tree has a disconnection
+                self.get_logger().info(f'Connectivity exception: {e}')
+            except tf2_ros.ExtrapolationException as e:
+                # the times are two far apart to extrapolate
+                self.get_logger().info(f'Extrapolation exception: {e}') 
+            
+        # elif(self.flag == 2):
+        #     pass
+
+
 
 
 
@@ -189,10 +214,11 @@ class Arena(Node):
         self.brick_publisher.publish(self.brick)
 
         try:
-            brick_platform_tf = self.tf_buffer.lookup_transform('brick', 'platform', rclpy.time.Time())
-            threshold_brick_platform = (brick_platform_tf.transform.translation.x**2 + brick_platform_tf.transform.translation.y**2 + brick_platform_tf.transform.translation.z**2)**0.5
+            brick_platform = self.tf_buffer.lookup_transform('brick', 'platform', rclpy.time.Time())
+            threshold_brick_platform = (brick_platform.transform.translation.x**2 + brick_platform.transform.translation.y**2 + brick_platform.transform.translation.z**2)**0.5
             if(threshold_brick_platform <= 0.1):
                 self.flag = False
+                self.move_brick = True
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
             self.get_logger().info(f'Lookup exception: {e}')
@@ -206,7 +232,7 @@ class Arena(Node):
         try:
             odom_brick_lookup = self.tf_buffer.lookup_transform('odom', 'brick', rclpy.time.Time())
             threshold_odom_brick = odom_brick_lookup.transform.translation.z
-            if(threshold_odom_brick <= 0.1):
+            if(threshold_odom_brick <= 0.2):
                 self.flag = False
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
