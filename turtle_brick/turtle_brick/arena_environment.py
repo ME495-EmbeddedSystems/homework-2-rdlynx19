@@ -3,9 +3,13 @@ from rclpy.node import Node
 from visualization_msgs.msg import Marker
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 from geometry_msgs.msg import TransformStamped
+import tf2_ros
 from tf2_ros import TransformBroadcaster
-from turtle_brick_interfaces.srv import Place
+from turtle_brick_interfaces.srv import Place, Drop
 from .physics import World 
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+import math
 
 class Arena(Node):
     """
@@ -15,11 +19,26 @@ class Arena(Node):
     def __init__(self):
         super().__init__('arena')
 
+        # Empty variable for brick_location
+        self.current_brick_location = [2.0, 2.0, 5.0]
+
         # Setting up the physics module
-        self.brick_physics = World([0.0, 0.0, 5.0], 9.8, 0.3, 0.01)
+        self.brick_physics = World([2.0, 2.0, 5.0], 9.8, 0.3, 0.01)
     
         # Create service for placing the brick at a given position
-        self.place_srv = self.create_service(Place, 'place', self.place_callback) 
+        self.place_srv = self.create_service(Place, 'place', self.place_callback)
+
+        # Creating service for dropping brick
+        self.drop_srv = self.create_service(Drop, 'drop', self.drop_callback)  
+
+        # Creating a client for the drop service
+        self.drop_client = self.create_client(Drop, 'drop')
+
+        # Creating a timer for the physics
+        self.physics_tmr = self.create_timer(1/250, self.physics_tmr_callback)
+
+        self.tf_buffer = Buffer()
+        self.brick_platform_listener = TransformListener(self.tf_buffer, self)
 
         # create a marker publisher
         markerQoS = QoSProfile(depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
@@ -118,22 +137,29 @@ class Arena(Node):
         self.marker_publisher.publish(self.m3)
 
         
-
-
-
         self.brick_tf_broadcaster = TransformBroadcaster(self)
         self.brick_tmr = self.create_timer(1/100, self.brick_tmr_callback)
 
-        
+        self.flag = False
+
+        self.drop_client.call_async(Drop.Request())
+
+    def physics_tmr_callback(self):
+        self.current_brick_location = self.brick_physics.brick
+        if(self.flag):
+            self.brick_physics.drop()
+
+
 
     def brick_tmr_callback(self):
         odom_brick_tf = TransformStamped()
         odom_brick_tf.header.frame_id = 'odom'
         odom_brick_tf.child_frame_id = 'brick'
-        brick_location = self.brick_physics.brick
-        odom_brick_tf.transform.translation.x = brick_location[0]
-        odom_brick_tf.transform.translation.y = brick_location[1]
-        odom_brick_tf.transform.translation.z = brick_location[2]
+        odom_brick_tf.header.stamp = self.get_clock().now().to_msg()
+        # brick_location = self.brick_physics.brick
+        odom_brick_tf.transform.translation.x = self.current_brick_location[0]
+        odom_brick_tf.transform.translation.y = self.current_brick_location[1]
+        odom_brick_tf.transform.translation.z = self.current_brick_location[2]
     
         self.brick_tf_broadcaster.sendTransform(odom_brick_tf)
 
@@ -146,9 +172,9 @@ class Arena(Node):
         self.brick.scale.x = 0.15
         self.brick.scale.y = 0.15
         self.brick.scale.z = 0.3
-        self.brick.pose.position.x = brick_location[0]
-        self.brick.pose.position.y = brick_location[1]
-        self.brick.pose.position.z = brick_location[2]
+        self.brick.pose.position.x = self.current_brick_location[0]
+        self.brick.pose.position.y = self.current_brick_location[1]
+        self.brick.pose.position.z = self.current_brick_location[2]
         self.brick.pose.orientation.x = 0.707
         self.brick.pose.orientation.y = 0.0
         self.brick.pose.orientation.z = 0.0
@@ -158,14 +184,48 @@ class Arena(Node):
         self.brick.color.b = 0.0
         self.brick.color.a = 1.0
         self.brick_publisher.publish(self.brick)
-        
+
+        try:
+            brick_platform_tf = self.tf_buffer.lookup_transform('brick', 'platform', rclpy.time.Time())
+            threshold_brick_platform = math.sqrt(brick_platform_tf.transform.translation.x**2 + brick_platform_tf.transform.translation.y**2 + brick_platform_tf.transform.translation.z**2)
+            if(threshold_brick_platform <= 0.1):
+                self.flag = False
+        except tf2_ros.LookupException as e:
+            # the frames don't exist yet
+            self.get_logger().info(f'Lookup exception: {e}')
+        except tf2_ros.ConnectivityException as e:
+            # the tf tree has a disconnection
+            self.get_logger().info(f'Connectivity exception: {e}')
+        except tf2_ros.ExtrapolationException as e:
+            # the times are two far apart to extrapolate
+            self.get_logger().info(f'Extrapolation exception: {e}')    
+
+        try:
+            odom_brick_lookup = self.tf_buffer.lookup_transform('odom', 'brick', rclpy.time.Time())
+            threshold_odom_brick = odom_brick_lookup.transform.translation.z
+            if(threshold_odom_brick <= 0.1):
+                self.flag = False
+        except tf2_ros.LookupException as e:
+            # the frames don't exist yet
+            self.get_logger().info(f'Lookup exception: {e}')
+        except tf2_ros.ConnectivityException as e:
+            # the tf tree has a disconnection
+            self.get_logger().info(f'Connectivity exception: {e}')
+        except tf2_ros.ExtrapolationException as e:
+            # the times are two far apart to extrapolate
+            self.get_logger().info(f'Extrapolation exception: {e}') 
+
+    
         
         
     def place_callback(self, request, response):
         print(request.brick_position) 
         self.brick_physics.brick= request.brick_position
         return response
-
+    
+    def drop_callback(self, request, response):
+        self.flag = True
+        return response
 
 def start_arena(args=None):
     rclpy.init(args=args)
