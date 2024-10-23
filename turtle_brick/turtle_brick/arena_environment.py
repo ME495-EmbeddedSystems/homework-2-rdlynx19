@@ -186,9 +186,22 @@ class Arena(Node):
         odom_brick_tf.transform.translation.x = self.current_brick_location[0]
         odom_brick_tf.transform.translation.y = self.current_brick_location[1]
         odom_brick_tf.transform.translation.z = self.current_brick_location[2]
-        # self.get_logger().info(f"Brick z_position: {self.current_brick_location[2]}")
-        # self.get_logger().info(f"Current time stamp: {odom_brick_tf.header.stamp}")
-    
+
+        try:
+            odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
+            odom_brick_tf.transform.rotation = odom_platform_lookup.transform.rotation
+        except tf2_ros.LookupException as e:
+            # the frames don't exist yet
+            self.get_logger().info(f'Lookup exception: {e}')
+        except tf2_ros.ConnectivityException as e:
+            # the tf tree has a disconnection
+            self.get_logger().info(f'Connectivity exception: {e}')
+        except tf2_ros.ExtrapolationException as e:
+            # the times are two far apart to extrapolate
+            self.get_logger().info(f'Extrapolation exception: {e}') 
+
+
+       
         self.brick_tf_broadcaster.sendTransform(odom_brick_tf)
 
         self.brick = Marker()
@@ -197,16 +210,16 @@ class Arena(Node):
         self.brick.id = 5
         self.brick.type = Marker.CUBE
         self.brick.action = Marker.ADD
-        self.brick.scale.x = 0.15
+        self.brick.scale.x = 0.3
         self.brick.scale.y = 0.15
-        self.brick.scale.z = 0.3
+        self.brick.scale.z = 0.15
         self.brick.pose.position.x = self.current_brick_location[0]
         self.brick.pose.position.y = self.current_brick_location[1]
         self.brick.pose.position.z = self.current_brick_location[2]
-        self.brick.pose.orientation.x = 0.707
-        self.brick.pose.orientation.y = 0.0
-        self.brick.pose.orientation.z = 0.0
-        self.brick.pose.orientation.w = 0.707
+        self.brick.pose.orientation.x = odom_brick_tf.transform.rotation.x
+        self.brick.pose.orientation.y = odom_brick_tf.transform.rotation.y
+        self.brick.pose.orientation.z = odom_brick_tf.transform.rotation.z
+        self.brick.pose.orientation.w = odom_brick_tf.transform.rotation.w
         self.brick.color.r = 1.0
         self.brick.color.g = 0.0
         self.brick.color.b = 0.0

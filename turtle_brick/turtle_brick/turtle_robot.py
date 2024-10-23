@@ -147,6 +147,7 @@ class Turtle_Robot(Node):
         # creating parameters for these useful properties like wheel_radius
         self.declare_parameter('wheel_radius', 0.15)
         self.wheel_joint_state = 0.0
+        self.plat_tilt_angle = 0.0
 
     def turtle_tmr_callback(self):
         wheel_radius = self.get_parameter('wheel_radius').value
@@ -196,7 +197,7 @@ class Turtle_Robot(Node):
         self.wheel_joint_state += (forward_velocity) / (wheel_radius) * (1 / 100)
         if self.wheel_joint_state > 3.14:
             self.wheel_joint_state = self.wheel_joint_state - 3.14
-        robot_joint_states.position = [0, 0, self.wheel_joint_state]
+        robot_joint_states.position = [self.plat_tilt_angle, 0, self.wheel_joint_state]
 
         self.joint_state_publisher.publish(robot_joint_states)
 
@@ -229,7 +230,7 @@ class Turtle_Robot(Node):
         # pass
 
     def tilt_msg_callback(self, tilt_msg):
-        odom_platform_tf = TransformStamped()
+        self.plat_tilt_angle = tilt_msg.tilt_angle
         
 
 
