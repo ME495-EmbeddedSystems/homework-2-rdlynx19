@@ -14,6 +14,8 @@ setup(
                                    'launch/show_turtle.launch.py',
                                    'launch/run_turtle.launch.xml',
                                    'launch/run_turtle.launch.py',
+                                   'launch/turtle_arena.launch.xml',
+                                   'launch/turtle_arena.launch.py',
                                    'urdf/turtle.urdf.xacro',
                                    'config/view_turtle.rviz',
                                    'config/turtle.yaml'
@@ -29,7 +31,8 @@ setup(
     entry_points={
         'console_scripts': [
             'turtle_robot = turtle_brick.turtle_robot:turtle_robot_start',
-            'arena = turtle_brick.arena_environment:start_arena'
+            'arena = turtle_brick.arena_environment:start_arena',
+            'catcher = turtle_brick.catcher_node:catch_brick'
         ],
     },
 )

@@ -4,6 +4,10 @@
     
     <node pkg="robot_state_publisher" exec="robot_state_publisher" >
         <param name="robot_description" value="$(command '$(exec-in-pkg xacro xacro) $(find-pkg-share turtle_brick)/turtle.urdf.xacro')"/>
+  
+  <!-- ##################################### Begin_Citation[] ############################### -->
+        <param name="publish_frequency" value="250.0 "/>
+<!-- ####################################### End_Citation[] ################################# -->
     </node>
 
     <group unless="$(eval '\'$(var use_jsp)\'==\'none\'')">
