@@ -102,8 +102,8 @@ class Turtle_Robot(Node):
         self.turtlesim_current_pose = (
             Pose()
         )  # class variable to store current pose of the turtlesim
-        self.turtlesim_current_pose.x = 0.0
-        self.turtlesim_current_pose.y = 0.0
+        self.turtlesim_current_pose.x = 5.54
+        self.turtlesim_current_pose.y = 5.54
         self.turtlesim_pose_subscriber = self.create_subscription(
             Pose, "/turtle1/pose", self.turtlesim_pose_callback, 1
         )
@@ -153,13 +153,13 @@ class Turtle_Robot(Node):
         wheel_radius = self.get_parameter('wheel_radius').value
         turtlesim_robot_tf = TransformStamped()
         turtlesim_robot_tf.header.stamp = self.get_clock().now().to_msg()
-        turtlesim_robot_tf.header.frame_id = "odom"
+        turtlesim_robot_tf.header.frame_id = "world"
         turtlesim_robot_tf.child_frame_id = "base_link"
         turtlesim_robot_tf.transform.translation.x = (
-            self.turtlesim_current_pose.x - 5.54
+            self.turtlesim_current_pose.x
         )
         turtlesim_robot_tf.transform.translation.y = (
-            self.turtlesim_current_pose.y - 5.54
+            self.turtlesim_current_pose.y
         )
         turtlesim_robot_tf.transform.translation.z = wheel_radius*2 + 0.2
         quat = quaternion_from_euler(0, 0, self.turtlesim_current_pose.theta)
@@ -193,12 +193,8 @@ class Turtle_Robot(Node):
         robot_joint_states.name = ["cylinder_platform", "base_stem", "stem_wheel"]
 
         forward_velocity = self.turtlesim_current_pose.linear_velocity
-        # forward_velocity = math.sqrt(self.current_velocity.linear.x **2 + self.current_velocity.linear.y**2)
+        
         self.wheel_joint_state += (forward_velocity) / (wheel_radius) * (1 / 100)
-        # if (self.wheel_joint_state > 3.14):
-            # self.wheel_joint_state = self.wheel_joint_state - 3.14
-
-
         
         robot_joint_states.position = [self.plat_tilt_angle, self.base_stem_angle, -self.wheel_joint_state]
 
@@ -214,24 +210,15 @@ class Turtle_Robot(Node):
 
         self.base_stem_angle = angular_diff
 
-        # yaw_vel = 0.1 * (angular_diff - self.turtlesim_current_pose.theta) + 0.05 * (
-        #     angular_diff - self.turtlesim_current_pose.theta
-        # ) / (1 / 100)
         x_vel = 4.0 * calculate_euclidean_distance(
             self.turtlesim_current_pose, self.goal_pose
         )
 
-        lin_vel = min(5.0, 4.0 * calculate_euclidean_distance(self.turtlesim_current_pose, self.goal_pose))
-
+        lin_vel = 3.0
         x_vel = lin_vel*math.cos(angular_diff)
         y_vel = lin_vel*math.sin(angular_diff)
 
-
-        # if(x_vel > 5.0):
-            # x_vel = 5.0
         cmd_twist = turtle_twist([x_vel, y_vel, 0.0], [0.0, 0.0, 0.0])
-        
-        # turtlesim_orientation = quaternion_from_euler(0.0, 0.0, self.turtlesim_current_pose.theta)
 
         if(calculate_euclidean_distance(self.turtlesim_current_pose, self.goal_pose) < 0.05 ):
             cmd_twist = turtle_twist([0.0, 0.0, 0.0],[0.0, 0.0, 0.0])
@@ -239,8 +226,7 @@ class Turtle_Robot(Node):
         self.current_velocity = cmd_twist
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
-        # if(turtlesim_pose_msg.theta > 3.06 or turtlesim_pose_msg.theta < -3.06):
-        #     turtlesim_pose_msg.theta = 0.0
+        
         self.turtlesim_current_pose = turtlesim_pose_msg
         
 

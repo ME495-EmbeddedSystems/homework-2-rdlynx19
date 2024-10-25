@@ -52,7 +52,7 @@ class Arena(Node):
 
         # markers for 4 walls of the arena
         self.m = Marker()
-        self.m.header.frame_id = "odom"
+        self.m.header.frame_id = "world"
         self.m.header.stamp = self.get_clock().now().to_msg()
         self.m.id = 1
         self.m.type = Marker.CUBE
@@ -60,21 +60,21 @@ class Arena(Node):
         self.m.scale.x = 11.0
         self.m.scale.y = 0.5
         self.m.scale.z = 3.0
-        self.m.pose.position.x = 0.0
-        self.m.pose.position.y = -5.56
+        self.m.pose.position.x = 5.54
+        self.m.pose.position.y = 0.0
         self.m.pose.position.z = 1.5
         self.m.pose.orientation.x = 0.0
         self.m.pose.orientation.y = 0.0
         self.m.pose.orientation.z = 0.0
         self.m.pose.orientation.w = 1.0
-        self.m.color.r = 0.0
-        self.m.color.g = 0.0
-        self.m.color.b = 1.0
+        self.m.color.r = 0.305
+        self.m.color.g = 0.164
+        self.m.color.b = 0.517
         self.m.color.a = 1.0
         self.marker_publisher.publish(self.m)
 
         self.m1 = Marker()
-        self.m1.header.frame_id = "odom"
+        self.m1.header.frame_id = "world"
         self.m1.header.stamp = self.get_clock().now().to_msg()
         self.m1.id = 2
         self.m1.type = Marker.CUBE
@@ -82,22 +82,22 @@ class Arena(Node):
         self.m1.scale.x = 11.0
         self.m1.scale.y = 0.5
         self.m1.scale.z = 3.0
-        self.m1.pose.position.x = 0.0
-        self.m1.pose.position.y = 5.56
+        self.m1.pose.position.x = 5.54
+        self.m1.pose.position.y = 11.0
         self.m1.pose.position.z = 1.5
         self.m1.pose.orientation.x = 0.0
         self.m1.pose.orientation.y = 0.0
         self.m1.pose.orientation.z = 0.0
         self.m1.pose.orientation.w = 1.0
-        self.m1.color.r = 0.0
-        self.m1.color.g = 0.0
-        self.m1.color.b = 1.0
+        self.m1.color.r = 0.305
+        self.m1.color.g = 0.164
+        self.m1.color.b = 0.517
         self.m1.color.a = 1.0
         self.marker_publisher.publish(self.m1)
 
 
         self.m2 = Marker()
-        self.m2.header.frame_id = "odom"
+        self.m2.header.frame_id = "world"
         self.m2.header.stamp = self.get_clock().now().to_msg()
         self.m2.id = 3
         self.m2.type = Marker.CUBE
@@ -105,21 +105,21 @@ class Arena(Node):
         self.m2.scale.x = 11.0
         self.m2.scale.y = 0.5
         self.m2.scale.z = 3.0
-        self.m2.pose.position.x = 5.56
-        self.m2.pose.position.y = 0.0
+        self.m2.pose.position.x = 11.0
+        self.m2.pose.position.y = 5.54
         self.m2.pose.position.z = 1.5
         self.m2.pose.orientation.x = 0.0
         self.m2.pose.orientation.y = 0.0
         self.m2.pose.orientation.z = 0.707
         self.m2.pose.orientation.w = 0.707
-        self.m2.color.r = 0.0
-        self.m2.color.g = 0.0
-        self.m2.color.b = 1.0
+        self.m2.color.r = 0.305
+        self.m2.color.g = 0.164
+        self.m2.color.b = 0.517
         self.m2.color.a = 1.0
         self.marker_publisher.publish(self.m2)
 
         self.m3 = Marker()
-        self.m3.header.frame_id = "odom"
+        self.m3.header.frame_id = "world"
         self.m3.header.stamp = self.get_clock().now().to_msg()
         self.m3.id = 4
         self.m3.type = Marker.CUBE
@@ -127,16 +127,16 @@ class Arena(Node):
         self.m3.scale.x = 11.0
         self.m3.scale.y = 0.5
         self.m3.scale.z = 3.0
-        self.m3.pose.position.x = -5.56
-        self.m3.pose.position.y = 0.0
+        self.m3.pose.position.x = 0.0
+        self.m3.pose.position.y = 5.54
         self.m3.pose.position.z = 1.5
         self.m3.pose.orientation.x = 0.0
         self.m3.pose.orientation.y = 0.0
         self.m3.pose.orientation.z = 0.707
         self.m3.pose.orientation.w = 0.707
-        self.m3.color.r = 0.0
-        self.m3.color.g = 0.0
-        self.m3.color.b = 1.0
+        self.m3.color.r = 0.305
+        self.m3.color.g = 0.164
+        self.m3.color.b = 0.517
         self.m3.color.a = 1.0
         self.marker_publisher.publish(self.m3)
 
@@ -159,18 +159,17 @@ class Arena(Node):
     def physics_tmr_callback(self):
         self.current_brick_location = self.brick_physics.brick
 
-        odom_brick_tf = TransformStamped()
-        odom_brick_tf.header.frame_id = 'odom'
-        odom_brick_tf.child_frame_id = 'brick'
-        odom_brick_tf.header.stamp = self.get_clock().now().to_msg()
-        # brick_location = self.brick_physics.brick
-        odom_brick_tf.transform.translation.x = self.current_brick_location[0]
-        odom_brick_tf.transform.translation.y = self.current_brick_location[1]
-        odom_brick_tf.transform.translation.z = self.current_brick_location[2]
+        world_brick_tf = TransformStamped()
+        world_brick_tf.header.frame_id = 'world'
+        world_brick_tf.child_frame_id = 'brick'
+        world_brick_tf.header.stamp = self.get_clock().now().to_msg()
+        world_brick_tf.transform.translation.x = self.current_brick_location[0]
+        world_brick_tf.transform.translation.y = self.current_brick_location[1]
+        world_brick_tf.transform.translation.z = self.current_brick_location[2]
 
         try:
-            odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
-            odom_brick_tf.transform.rotation = odom_platform_lookup.transform.rotation
+            world_platform_lookup = self.tf_buffer.lookup_transform('platform', 'world', rclpy.time.Time())
+            world_brick_tf.transform.rotation = world_platform_lookup.transform.rotation
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
             self.get_logger().info(f'Lookup exception: {e}')
@@ -182,10 +181,10 @@ class Arena(Node):
             self.get_logger().info(f'Extrapolation exception: {e}') 
 
        
-        self.brick_tf_broadcaster.sendTransform(odom_brick_tf)
+        self.brick_tf_broadcaster.sendTransform(world_brick_tf)
 
         self.brick = Marker()
-        self.brick.header.frame_id = "odom"
+        self.brick.header.frame_id = "world"
         self.brick.header.stamp = self.get_clock().now().to_msg()
         self.brick.id = 5
         self.brick.type = Marker.CUBE
@@ -196,10 +195,10 @@ class Arena(Node):
         self.brick.pose.position.x = self.current_brick_location[0]
         self.brick.pose.position.y = self.current_brick_location[1]
         self.brick.pose.position.z = self.current_brick_location[2]
-        self.brick.pose.orientation.x = odom_brick_tf.transform.rotation.x
-        self.brick.pose.orientation.y = odom_brick_tf.transform.rotation.y
-        self.brick.pose.orientation.z = odom_brick_tf.transform.rotation.z
-        self.brick.pose.orientation.w = odom_brick_tf.transform.rotation.w
+        self.brick.pose.orientation.x = world_brick_tf.transform.rotation.x
+        self.brick.pose.orientation.y = world_brick_tf.transform.rotation.y
+        self.brick.pose.orientation.z = world_brick_tf.transform.rotation.z
+        self.brick.pose.orientation.w = world_brick_tf.transform.rotation.w
         self.brick.color.r = 1.0
         self.brick.color.g = 0.0
         self.brick.color.b = 0.0
@@ -285,7 +284,7 @@ class Arena(Node):
         
     def place_callback(self, request, response):
         print(request.brick_position) 
-        self.brick_physics.brick= request.brick_position
+        self.brick_physics.brick = request.brick_position
         return response
     
     def drop_callback(self, request, response):

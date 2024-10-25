@@ -2,7 +2,7 @@
     <include file="$(find-pkg-share turtle_brick)/run_turtle.launch.xml"/>
 
     <node pkg="turtle_brick" exec="catcher">
-
+        <param from="$(find-pkg-share turtle_brick)/turtle.yaml"/>
     </node>
 
 
