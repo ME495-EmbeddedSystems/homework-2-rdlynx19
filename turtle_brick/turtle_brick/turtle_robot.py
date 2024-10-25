@@ -114,7 +114,7 @@ class Turtle_Robot(Node):
         # cmd_vel publisher
         self.current_velocity = Twist()  # creating a twist class variable
         self.cmd_vel_publisher = self.create_publisher(Twist, "cmd_vel", 1)
-        self.cmd_vel_tmr = self.create_timer(1 / 100, self.cmd_vel_tmr_callback)
+        self.cmd_vel_tmr = self.create_timer(1 / 250, self.cmd_vel_tmr_callback)
 
         # goal pose subscriber
         self.goal_pose = PoseStamped()
@@ -147,6 +147,7 @@ class Turtle_Robot(Node):
         self.declare_parameter('wheel_radius', 0.15)
         self.wheel_joint_state = 0.0
         self.plat_tilt_angle = 0.0
+        self.base_stem_angle = 0.0
 
     def turtle_tmr_callback(self):
         wheel_radius = self.get_parameter('wheel_radius').value
@@ -196,7 +197,10 @@ class Turtle_Robot(Node):
         self.wheel_joint_state += (forward_velocity) / (wheel_radius) * (1 / 100)
         # if (self.wheel_joint_state > 3.14):
             # self.wheel_joint_state = self.wheel_joint_state - 3.14
-        robot_joint_states.position = [self.plat_tilt_angle, 0.0, -self.wheel_joint_state]
+
+
+        
+        robot_joint_states.position = [self.plat_tilt_angle, self.base_stem_angle, -self.wheel_joint_state]
 
         self.joint_state_publisher.publish(robot_joint_states)
 
@@ -207,13 +211,25 @@ class Turtle_Robot(Node):
             self.goal_pose.pose.position.y - (self.turtlesim_current_pose.y),
             self.goal_pose.pose.position.x - (self.turtlesim_current_pose.x),
         )
-        yaw_vel = 0.8 * (angular_diff - self.turtlesim_current_pose.theta) + 0.05 * (
-            angular_diff - self.turtlesim_current_pose.theta
-        ) / (1 / 100)
-        x_vel = 0.4 * calculate_euclidean_distance(
+
+        self.base_stem_angle = angular_diff
+
+        # yaw_vel = 0.1 * (angular_diff - self.turtlesim_current_pose.theta) + 0.05 * (
+        #     angular_diff - self.turtlesim_current_pose.theta
+        # ) / (1 / 100)
+        x_vel = 4.0 * calculate_euclidean_distance(
             self.turtlesim_current_pose, self.goal_pose
         )
-        cmd_twist = turtle_twist([x_vel, 0.0, 0.0], [0.0, 0.0, yaw_vel])
+
+        lin_vel = min(5.0, 4.0 * calculate_euclidean_distance(self.turtlesim_current_pose, self.goal_pose))
+
+        x_vel = lin_vel*math.cos(angular_diff)
+        y_vel = lin_vel*math.sin(angular_diff)
+
+
+        # if(x_vel > 5.0):
+            # x_vel = 5.0
+        cmd_twist = turtle_twist([x_vel, y_vel, 0.0], [0.0, 0.0, 0.0])
         
         # turtlesim_orientation = quaternion_from_euler(0.0, 0.0, self.turtlesim_current_pose.theta)
 

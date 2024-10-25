@@ -1,9 +1,14 @@
 import rclpy
+import rclpy.duration
 from rclpy.node import Node
 import tf2_ros
 from turtlesim.msg import Pose
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import PoseStamped
+from builtin_interfaces.msg import Duration
 
 class Catcher(Node):
     """
@@ -19,6 +24,7 @@ class Catcher(Node):
         self.tmr_to_brick = self.create_timer(1/250, self.tmr_to_brick_callback)
 
         self.tf_buffer = Buffer()
+        self.transform_listener = TransformListener(self.tf_buffer, self)
         
 
         self.turtlesim_pose_subscriber = self.create_subscription(
@@ -28,6 +34,41 @@ class Catcher(Node):
         self.turtlesim_current_pose = Pose()
         self.turtlesim_current_pose.x = 5.54
         self.turtlesim_current_pose.y = 5.54
+
+        self.goal_pose_publisher = self.create_publisher(PoseStamped, "goal_pose",10)
+
+
+        markerQoS = QoSProfile(depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
+        self.marker_publisher = self.create_publisher(Marker, 'text_marker', markerQoS)
+
+        self.m = Marker()
+        self.m.header.frame_id = "odom"
+        self.m.header.stamp = self.get_clock().now().to_msg()
+        self.m.id = 6
+        self.m.type = Marker.TEXT_VIEW_FACING
+        self.m.action = Marker.ADD
+        self.m.scale.x = 1.0
+        self.m.scale.y = 1.0
+        self.m.scale.z = 1.0
+        self.m.pose.position.x = 0.0
+        self.m.pose.position.y = 0.0
+        self.m.pose.position.z = 1.5
+        self.m.pose.orientation.x = 0.0
+        self.m.pose.orientation.y = 0.0
+        self.m.pose.orientation.z = 0.0
+        self.m.pose.orientation.w = 1.0
+        self.m.color.r = 1.0
+        self.m.color.g = 0.0
+        self.m.color.b = 1.0
+        self.m.color.a = 1.0
+
+        marker_duration = Duration()
+        marker_duration.sec = 3
+
+        self.m.lifetime = marker_duration
+        self.m.text = "Unavailable"
+        self.marker_publisher.publish(self.m)
+            
 
 
     def tmr_to_brick_callback(self):
@@ -42,16 +83,25 @@ class Catcher(Node):
             current_brick_height = odom_brick_lookup.transform.translation.z
 
             dist_to_platform = current_brick_height - (plat_height + (wheel_radius*2) + 0.2)
+
+            if(dist_to_platform > 0.0):
+                time_to_platform = ((dist_to_platform * 2)/9.8)**0.5
             
             planar_dist_to_brick = ((self.turtlesim_current_pose.x - odom_brick_lookup.transform.translation.x)**2 + (self.turtlesim_current_pose.y - odom_brick_lookup.transform.translation.y)**2)**0.5
             
-            minimum_time_to_brick = planar_dist_to_brick/max_velocity           
+            minimum_time_to_brick = planar_dist_to_brick/max_velocity      
 
-            if((dist_to_platform/max_velocity) > minimum_time_to_brick):
+            if(dist_to_platform < 0):
+                self.get_logger().info("Fuck this")
+
+            elif(time_to_platform > minimum_time_to_brick):
                 self.get_logger().info("Cant reach the fucking brick")
             else:
                 self.get_logger().info(f"I can reach the brick at position x: {odom_brick_lookup.transform.translation.x} y: {odom_brick_lookup.transform.translation.y}")
-    
+                goal_pose = PoseStamped()
+                goal_pose.pose.position.x = odom_brick_lookup.transform.translation.x + 5.54
+                goal_pose.pose.position.y = odom_brick_lookup.transform.translation.y + 5.54
+                self.goal_pose_publisher.publish(goal_pose)
 
 
         except tf2_ros.LookupException as e:
@@ -63,6 +113,9 @@ class Catcher(Node):
         except tf2_ros.ExtrapolationException as e:
             # the times are two far apart to extrapolate
             self.get_logger().info(f'Extrapolation exception: {e}') 
+
+
+    
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
         self.turtlesim_current_pose = turtlesim_pose_msg

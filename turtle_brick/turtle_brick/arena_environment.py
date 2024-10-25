@@ -27,7 +27,7 @@ class Arena(Node):
         self.current_brick_location = [2.0, 2.0, 5.0]
         self.platform_radius = 0.3
         # Setting up the physics module
-        self.brick_physics = World([4.0, 4.0, 8.0], 9.8, self.platform_radius, 0.04)
+        self.brick_physics = World([2.0, 2.0, 8.0], 9.8, self.platform_radius, 0.04)
     
         # Create service for placing the brick at a given position
         self.place_srv = self.create_service(Place, 'place', self.place_callback)
