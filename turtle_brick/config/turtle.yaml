@@ -1,18 +1,3 @@
-turtle_robot:
-    ros__parameters:
-        wheel_radius: 0.15
-        platform_height: 0.7
-
-arena:
-    ros__parameters:
-        gravity_accel: 9.8
-
-catcher:
-    ros__parameters:
-        max_velocity: 3.0
-        platform_height: 0.7
-        wheel_radius: 0.15
-
 /**:
     ros__parameters:
         max_velocity: 3.0
