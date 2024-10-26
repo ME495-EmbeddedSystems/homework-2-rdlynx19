@@ -15,43 +15,50 @@ import math
 
 class Arena(Node):
     """
-    the node for setting up the arena
+    The Arena Node
     """
 
     def __init__(self):
         super().__init__('arena')
 
-        self.gravity_acceleration = self.declare_parameter('gravity_acceleration', 9.8) 
-        self.max_vel = self.declare_parameter('max_velocity', 10.0)
+        # QoS Profile
+        markerQoS = QoSProfile(depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
 
-        # Empty variable for brick_location
-        self.current_brick_location = [2.0, 2.0, 5.0]
-        self.platform_radius = 0.3
-        # Setting up the physics module
-        self.brick_physics = World([4.0,4.0, 8.0], 9.8, self.platform_radius, 0.04)
-    
-        # Create service for placing the brick at a given position
+        # Publishers
+        self.marker_publisher = self.create_publisher(Marker, 'visualization_marker', markerQoS)
+        self.brick_publisher = self.create_publisher(Marker, 'brick_marker', markerQoS)
+
+        # Subscriber
+        self.tilt_angle_subscriber = self.create_subscription(
+            Tilt, "platform_tilt_angle", self.tilt_msg_callback, 1
+        )
+        
+        # Parameters
+        self.gravity_acceleration = self.declare_parameter('gravity_acceleration', 9.8)
+        # gravity_acceleration = self.get_parameter("wheel_radius").value
+        self.max_velocity = self.declare_parameter('max_velocity', 3.0)
+
+        # Services
+        self.drop_srv = self.create_service(Drop, 'drop', self.drop_callback)  
         self.place_srv = self.create_service(Place, 'place', self.place_callback)
 
-        # Creating service for dropping brick
-        self.drop_srv = self.create_service(Drop, 'drop', self.drop_callback)  
-
-        # Creating a client for the drop service
+        # Timers
+        self.physics_tmr = self.create_timer((1/250), self.physics_tmr_callback)
+        
+        # Clients
         self.drop_client = self.create_client(Drop, 'drop')
 
-        # Creating a timer for the physics
-        self.physics_tmr = self.create_timer((1/250), self.physics_tmr_callback)
-
+        # Buffer for Transform Lookup
         self.tf_buffer = Buffer()
         self.brick_platform_listener = TransformListener(self.tf_buffer, self)
 
-        # create a marker publisher
-        markerQoS = QoSProfile(depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
-        self.marker_publisher = self.create_publisher(Marker, 'visualization_marker', markerQoS)
+        # Initialising the physics World
+        self.current_brick_location = [4.0, 4.0, 8.0]
+        self.platform_radius = 0.3
+        self.brick_physics = World([self.current_brick_location[0], self.current_brick_location[1], self.current_brick_location[2]], 9.8, self.platform_radius, 0.04)
+        
 
-        self.brick_publisher = self.create_publisher(Marker, 'brick_marker', markerQoS)
-
-        # markers for 4 walls of the arena
+        # Initialising and publishing the wall markers
         self.m = Marker()
         self.m.header.frame_id = "world"
         self.m.header.stamp = self.get_clock().now().to_msg()
@@ -141,23 +148,23 @@ class Arena(Node):
         self.m3.color.a = 1.0
         self.marker_publisher.publish(self.m3)
 
-        
+
+        # Dynamic Transform Broadcaster  
         self.brick_tf_broadcaster = TransformBroadcaster(self)
 
-        self.tilt_angle = 0.0
-
-        self.tilt_angle_subscriber = self.create_subscription(
-            Tilt, "platform_tilt_angle", self.tilt_msg_callback, 1
-        )
-
-           
+        # Helper variables 
         self.flag = False
         self.move_brick = False
         self.move_brick_x = True
         self.move_brick_z = True
+        self.tilt_angle = 0.0
+
         self.drop_client.call_async(Drop.Request())
 
     def physics_tmr_callback(self):
+        """
+        The timer for the physics and transforms   
+        """
         self.current_brick_location = self.brick_physics.brick
 
         world_brick_tf = TransformStamped()
@@ -207,7 +214,6 @@ class Arena(Node):
         self.brick_publisher.publish(self.brick) 
 
 
-
         try:
             brick_platform = self.tf_buffer.lookup_transform('brick', 'platform', rclpy.time.Time())
             threshold_brick_platform = (brick_platform.transform.translation.x**2 + brick_platform.transform.translation.y**2 + brick_platform.transform.translation.z**2)**0.5
@@ -240,12 +246,10 @@ class Arena(Node):
             self.get_logger().info(f'Extrapolation exception: {e}') 
 
 
-
         if(self.flag):
             self.brick_physics.drop()
         elif(self.move_brick):
             try:
-                # odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
 
                 world_platform_lookup = self.tf_buffer.lookup_transform('world', 'platform',rclpy.time.Time())
 
@@ -254,7 +258,6 @@ class Arena(Node):
                         self.brick_physics.drop_brick_x(self.tilt_angle)
                     if(self.move_brick_z):
                         self.brick_physics.drop_brick_z(self.tilt_angle)
-                    # odom_brick_lookup = self.tf_buffer.lookup_transform('odom', 'brick', rclpy.time.Time())
 
                     world_brick_lookup = self.tf_buffer.lookup_transform('world','brick', rclpy.time.Time())
 
@@ -269,12 +272,8 @@ class Arena(Node):
                         self.move_brick = False
                 else:
                     platform_location = Point()
-                    # platform_location.x = odom_platform_lookup.transform.translation.x + 5.54
-                    # platform_location.y = odom_platform_lookup.transform.translation.y + 5.54
-
                     platform_location.x = world_platform_lookup.transform.translation.x
                     platform_location.y = world_platform_lookup.transform.translation.y
-
                     platform_location.z = world_platform_lookup.transform.translation.z + 0.05 + 0.075
                     self.brick_physics.brick = platform_location
                     self.current_brick_location = self.brick_physics.brick
@@ -287,23 +286,42 @@ class Arena(Node):
             except tf2_ros.ExtrapolationException as e:
                 # the times are two far apart to extrapolate
                 self.get_logger().info(f'Extrapolation exception: {e}') 
-            
-        # elif(self.flag == 2):
-        #     pass
-
-        
+              
         
     def place_callback(self, request, response):
+        """Callback function for the /place service which places the brick at a given position
+
+            Args:
+                request(turtle_brick_interfaces/Place) : place request object
+                response(EmptyResponse) : empty response object
+
+            Returns:
+                An empty response object
+        """
         self.brick_physics.brick = request.brick_position
         self.flag = False
         self.move_brick = False
         return response
     
     def drop_callback(self, request, response):
+        """Callback function for the /drop service to start dropping the brick in gravity
+            
+            Args:
+                request(turtle_brick_interfaces/Drop) : drop request object
+                response(bool) : bool response
+
+            Returns:
+                 A bool response
+        """
         self.flag = True
         return response
     
     def tilt_msg_callback(self, tilt_msg):
+        """Callback for the /platform_tilt_angle topic subscription
+
+            Args:
+                tilt_msg(turtle_brick_interfaces/Tilt) : the tilt angle for the platform
+        """
         self.tilt_angle = tilt_msg.tilt_angle
 
 
