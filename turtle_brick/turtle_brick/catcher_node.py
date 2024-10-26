@@ -9,6 +9,7 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped
 from builtin_interfaces.msg import Duration
+import time
 
 
 class Catcher(Node):
@@ -44,7 +45,8 @@ class Catcher(Node):
 
         self.brick_z_positions = []
             
-        self.timer_iteration = 0
+        self.decision_flag = False
+        self.iter = 0
 
     def tmr_to_brick_callback(self):
         """
@@ -59,21 +61,21 @@ class Catcher(Node):
 
             self.brick_z_positions.append(current_brick_height)
 
-            if(self.timer_iteration == 10):
+            if(self.decision_flag == True):
                 if(self.brick_z_positions[-2] - self.brick_z_positions[-1] >= 0.0000784):
                     dist_to_platform = current_brick_height - (plat_height + (wheel_radius*2) + 0.2)
-                    planar_dist_to_brick = (self.turtlesim_current_pose.x - (odom_brick_lookup.transform.translation.x ))**2 + (self.turtlesim_current_pose.y - (odom_brick_lookup.transform.translation.y)**2)**0.5
+                    planar_dist_to_brick = ((self.turtlesim_current_pose.x - odom_brick_lookup.transform.translation.x )**2 + (self.turtlesim_current_pose.y - odom_brick_lookup.transform.translation.y)**2)**0.5
                     
                     minimum_time_to_brick = planar_dist_to_brick/max_velocity     
 
                     if(dist_to_platform > 0.0):
                         time_to_platform = ((dist_to_platform * 2)/9.8)**0.5
-                        if(time_to_platform > minimum_time_to_brick):
+                        if(time_to_platform < minimum_time_to_brick):
                             
                             # if(self.timer_iteration == 1):
                                 self.display_msg_marker()
                                 self.get_logger().info("Cant reach the  brick")
-                                
+                                self.decision_flag = False
                         else:
                             # if(self.timer_iteration == 1):
                             self.get_logger().info(f"I can reach the brick at position x: {odom_brick_lookup.transform.translation.x} y: {odom_brick_lookup.transform.translation.y}")
@@ -81,6 +83,7 @@ class Catcher(Node):
                             goal_pose.pose.position.x = odom_brick_lookup.transform.translation.x
                             goal_pose.pose.position.y = odom_brick_lookup.transform.translation.y 
                             self.goal_pose_publisher.publish(goal_pose)
+                            self.decision_flag = False
             try:
                 odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
             
@@ -113,12 +116,13 @@ class Catcher(Node):
             self.get_logger().info(f'Extrapolation exception: {e}') 
 
     
-        
+        self.iter += 1
+        if (self.iter == 100):
+            self.decision_flag = True
+            
 
         
-        self.timer_iteration += 1
-        if(self.timer_iteration > 100):
-            self.timer_iteration = 11
+        
 
 
     def display_msg_marker(self):

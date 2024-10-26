@@ -1,8 +1,8 @@
 <robot name="turtle" xmlns:xacro="http://www.ros.org/wiki/xacro">
 <xacro:property name="turtle_yaml" value="$(find turtle_brick)/turtle.yaml"/>
 <xacro:property name="yaml_dict" value="${xacro.load_yaml(turtle_yaml)}"/>
-<xacro:property name="wheel_radius" value="${yaml_dict['turtle_robot']['ros__parameters']['wheel_radius']}"/>
-<xacro:property name="platform_height" value="${yaml_dict['turtle_robot']['ros__parameters']['platform_height']}"/>
+<xacro:property name="wheel_radius" value="${yaml_dict['/**']['ros__parameters']['wheel_radius']}"/>
+<xacro:property name="platform_height" value="${yaml_dict['/**']['ros__parameters']['platform_height']}"/>
 <xacro:property name="stem_length" value="0.05"/>
 <xacro:property name="box_side" value="0.3"/>
 

@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+import rclpy.time
 from visualization_msgs.msg import Marker
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 from geometry_msgs.msg import TransformStamped, Point
@@ -27,7 +28,7 @@ class Arena(Node):
         self.current_brick_location = [2.0, 2.0, 5.0]
         self.platform_radius = 0.3
         # Setting up the physics module
-        self.brick_physics = World([2.0, 2.0, 8.0], 9.8, self.platform_radius, 0.04)
+        self.brick_physics = World([4.0,4.0, 8.0], 9.8, self.platform_radius, 0.04)
     
         # Create service for placing the brick at a given position
         self.place_srv = self.create_service(Place, 'place', self.place_callback)
@@ -244,16 +245,22 @@ class Arena(Node):
             self.brick_physics.drop()
         elif(self.move_brick):
             try:
-                odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
-                if(odom_platform_lookup.transform.rotation.x != 0.0 or odom_platform_lookup.transform.rotation.y !=0.0):
+                # odom_platform_lookup = self.tf_buffer.lookup_transform('odom', 'platform', rclpy.time.Time())
+
+                world_platform_lookup = self.tf_buffer.lookup_transform('world', 'platform',rclpy.time.Time())
+
+                if(world_platform_lookup.transform.rotation.x != 0.0 or world_platform_lookup.transform.rotation.y !=0.0):
                     if(self.move_brick_x):
                         self.brick_physics.drop_brick_x(self.tilt_angle)
                     if(self.move_brick_z):
                         self.brick_physics.drop_brick_z(self.tilt_angle)
-                    odom_brick_lookup = self.tf_buffer.lookup_transform('odom', 'brick', rclpy.time.Time())
-                    z_displacement = odom_platform_lookup.transform.translation.z - odom_brick_lookup.transform.translation.z
-                    x_displacement = odom_platform_lookup.transform.translation.x - odom_brick_lookup.transform.translation.x
-                    # if(platform_brick_lookup.transform.translation.z  <= (0.125 - ((self.platform_radius + 0.075 )*math.sin(self.tilt_angle))) or platform_brick_lookup.transform.translation.z  >= -(0.125 - ((self.platform_radius + 0.075 )*math.sin(self.tilt_angle)) )):
+                    # odom_brick_lookup = self.tf_buffer.lookup_transform('odom', 'brick', rclpy.time.Time())
+
+                    world_brick_lookup = self.tf_buffer.lookup_transform('world','brick', rclpy.time.Time())
+
+                    z_displacement = world_platform_lookup.transform.translation.z - world_brick_lookup.transform.translation.z
+                    x_displacement = world_platform_lookup.transform.translation.x - world_brick_lookup.transform.translation.x
+           
                     if(z_displacement > (0.400* math.sin(self.tilt_angle))):
                         self.move_brick_z = False
                     if((x_displacement) > (0.400* math.cos(self.tilt_angle))):
@@ -262,9 +269,13 @@ class Arena(Node):
                         self.move_brick = False
                 else:
                     platform_location = Point()
-                    platform_location.x = odom_platform_lookup.transform.translation.x
-                    platform_location.y = odom_platform_lookup.transform.translation.y
-                    platform_location.z = odom_platform_lookup.transform.translation.z + 0.05 + 0.075
+                    # platform_location.x = odom_platform_lookup.transform.translation.x + 5.54
+                    # platform_location.y = odom_platform_lookup.transform.translation.y + 5.54
+
+                    platform_location.x = world_platform_lookup.transform.translation.x
+                    platform_location.y = world_platform_lookup.transform.translation.y
+
+                    platform_location.z = world_platform_lookup.transform.translation.z + 0.05 + 0.075
                     self.brick_physics.brick = platform_location
                     self.current_brick_location = self.brick_physics.brick
             except tf2_ros.LookupException as e:
@@ -283,8 +294,9 @@ class Arena(Node):
         
         
     def place_callback(self, request, response):
-        print(request.brick_position) 
         self.brick_physics.brick = request.brick_position
+        self.flag = False
+        self.move_brick = False
         return response
     
     def drop_callback(self, request, response):

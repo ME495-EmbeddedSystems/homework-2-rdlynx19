@@ -82,50 +82,37 @@ def calculate_euclidean_distance(current_pos, goal_pos):
 
 class Turtle_Robot(Node):
     """
-    Turtle Robot Node
+    The Turtle Robot Node
     """
 
     def __init__(self):
         super().__init__("turtle_robot")
 
-        # transformation from odom to base_link
-        self.tf_broadcaster = TransformBroadcaster(self)
-        self.turtle_tmr = self.create_timer(1 / 100, self.turtle_tmr_callback)
 
-        # joint state publisher
+        # Publishers
         self.joint_state_publisher = self.create_publisher(
             JointState, "joint_states", 1
         )
-        self.joint_state_tmr = self.create_timer(1 / 100, self.joint_state_tmr_callback)
+        self.cmd_vel_publisher = self.create_publisher(Twist, "cmd_vel", 1)
+        self.odom_publisher = self.create_publisher(Odometry, "odom", 1)
 
-        # turtle pose subscriber
-        self.turtlesim_current_pose = (
-            Pose()
-        )  # class variable to store current pose of the turtlesim
-        self.turtlesim_current_pose.x = 5.54
-        self.turtlesim_current_pose.y = 5.54
+        # Timers
+        self.turtle_tmr = self.create_timer(1 / 100, self.turtle_tmr_callback)
+        self.joint_state_tmr = self.create_timer(1 / 100, self.joint_state_tmr_callback)
+        self.cmd_vel_tmr = self.create_timer(1 / 250, self.cmd_vel_tmr_callback)
+
+       # Subscribers
         self.turtlesim_pose_subscriber = self.create_subscription(
             Pose, "/turtle1/pose", self.turtlesim_pose_callback, 1
         )
-
-        # odom message publisher
-        self.odom_publisher = self.create_publisher(Odometry, "odom", 1)
-
-        # cmd_vel publisher
-        self.current_velocity = Twist()  # creating a twist class variable
-        self.cmd_vel_publisher = self.create_publisher(Twist, "cmd_vel", 1)
-        self.cmd_vel_tmr = self.create_timer(1 / 250, self.cmd_vel_tmr_callback)
-
-        # goal pose subscriber
-        self.goal_pose = PoseStamped()
-        self.goal_pose.pose.position.x = 5.54
-        self.goal_pose.pose.position.y = 5.54
-        self.goal_pose.pose.position.z = 0.0
         self.goal_pose_subscriber = self.create_subscription(
             PoseStamped, "goal_pose", self.goal_pose_callback, 1
         )
+        self.tilt_angle_subscriber = self.create_subscription(
+            Tilt, "platform_tilt_angle", self.tilt_msg_callback, 1
+        )
 
-        # static broadcaster for the world frame
+        # Static Transform Broadcaster world->odom
         self.static_world_broadcaster = StaticTransformBroadcaster(self)
 
         world_odom_tf = TransformStamped()
@@ -138,18 +125,34 @@ class Turtle_Robot(Node):
         self.static_world_broadcaster.sendTransform(world_odom_tf)
         self.get_logger().info("Static Transfrom: world->odom")
 
-        # tilt message subscriber
-        self.tilt_angle_subscriber = self.create_subscription(
-            Tilt, "platform_tilt_angle", self.tilt_msg_callback, 1
-        )
+        # Parameters
+        self.declare_parameter("wheel_radius", 0.15)
+        self.declare_parameter("max_velocity", 3.0)
 
-        # creating parameters for these useful properties like wheel_radius
-        self.declare_parameter('wheel_radius', 0.15)
+        # Dynamic Transform Broadcaster
+        self.tf_broadcaster = TransformBroadcaster(self)
+
+        # Helper variables
+        self.turtlesim_current_pose = (
+            Pose())
+        self.turtlesim_current_pose.x = 5.54
+        self.turtlesim_current_pose.y = 5.54
+
+        self.current_velocity = Twist() 
+
+        self.goal_pose = PoseStamped()
+        self.goal_pose.pose.position.x = 5.54
+        self.goal_pose.pose.position.y = 5.54
+        self.goal_pose.pose.position.z = 0.0
+
         self.wheel_joint_state = 0.0
         self.plat_tilt_angle = 0.0
         self.base_stem_angle = 0.0
 
     def turtle_tmr_callback(self):
+        """
+        The timer to publish the transform world->base_link and the odometry message
+        """
         wheel_radius = self.get_parameter('wheel_radius').value
         turtlesim_robot_tf = TransformStamped()
         turtlesim_robot_tf.header.stamp = self.get_clock().now().to_msg()
@@ -186,6 +189,9 @@ class Turtle_Robot(Node):
         self.odom_publisher.publish(odom_msg)
 
     def joint_state_tmr_callback(self):
+        """
+        The timer to update the joint states
+        """
         wheel_radius = self.get_parameter('wheel_radius').value
         robot_joint_states = JointState()
         robot_joint_states.header.stamp = self.get_clock().now().to_msg()
@@ -201,8 +207,9 @@ class Turtle_Robot(Node):
         self.joint_state_publisher.publish(robot_joint_states)
 
     def cmd_vel_tmr_callback(self):
-        # publish cmd_vel messages here
-        # use goal pose to calculate apt cmd_vel messages
+        """
+        The timer for giving cmd_vel commands to the robot
+        """
         angular_diff = math.atan2(
             self.goal_pose.pose.position.y - (self.turtlesim_current_pose.y),
             self.goal_pose.pose.position.x - (self.turtlesim_current_pose.x),
@@ -210,13 +217,9 @@ class Turtle_Robot(Node):
 
         self.base_stem_angle = angular_diff
 
-        x_vel = 4.0 * calculate_euclidean_distance(
-            self.turtlesim_current_pose, self.goal_pose
-        )
-
-        lin_vel = 3.0
-        x_vel = lin_vel*math.cos(angular_diff)
-        y_vel = lin_vel*math.sin(angular_diff)
+        linear_velocity = 3.0
+        x_vel = linear_velocity*math.cos(angular_diff)
+        y_vel = linear_velocity*math.sin(angular_diff)
 
         cmd_twist = turtle_twist([x_vel, y_vel, 0.0], [0.0, 0.0, 0.0])
 
@@ -226,16 +229,28 @@ class Turtle_Robot(Node):
         self.current_velocity = cmd_twist
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
-        
+        """Callback function for the /turtle1/pose topic subscription
+
+            Args:
+                turtlesim_pose_msg (turtlesim/Pose) : the turtle's current pose
+        """ 
         self.turtlesim_current_pose = turtlesim_pose_msg
         
 
     def goal_pose_callback(self, goal_pose_msg):
-        # command velocity to send robot to goal pose
+        """Callback function for the /goal_pose topic subscription
+
+            Args:
+                goal_pose_msg (geometry_msg/PoseStamped) : the goal pose for the turtle
+        """
         self.goal_pose = goal_pose_msg
-        # pass
 
     def tilt_msg_callback(self, tilt_msg):
+        """Callback function for the /platform_tilt_angle topic subscription
+
+            Args:
+                tilt_msg (turtle_brick_interfaces/Tilt) : the tilt angle for the platform
+        """
         self.plat_tilt_angle = tilt_msg.tilt_angle
         
 

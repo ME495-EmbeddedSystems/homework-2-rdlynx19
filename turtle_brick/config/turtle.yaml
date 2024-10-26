@@ -12,3 +12,10 @@ catcher:
         max_velocity: 3.0
         platform_height: 0.7
         wheel_radius: 0.15
+
+/**:
+    ros__parameters:
+        max_velocity: 3.0
+        platform_height: 0.7
+        gravity_acceleration: 9.8
+        wheel_radius: 0.15
