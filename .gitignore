@@ -1,3 +1,5 @@
 .vscode
 turtle_brick/turtle_brick/__pycache__
 build
+.coverage
+turtle_brick/test/__pycache__

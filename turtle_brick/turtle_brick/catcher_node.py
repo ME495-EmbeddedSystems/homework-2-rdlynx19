@@ -176,10 +176,13 @@ class Catcher(Node):
         self.marker_publisher.publish(self.m)
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
-        """Store the turtle's pose.
+        """
+        Store the turtle's pose.
 
         Args:
-            turtlesim_pose_msg (turtlesim/Pose) : the turtle's current pose
+        ----
+        turtlesim_pose_msg (turtlesim/Pose) : the turtle's current pose
+
         """
         self.turtlesim_current_pose = turtlesim_pose_msg
 

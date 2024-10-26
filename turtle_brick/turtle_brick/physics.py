@@ -10,10 +10,12 @@ class World:
         Initialize the world.
 
         Args:
-        brick - The (x,y,z) location of the brick
-        gravity - the acceleration due to gravity in m/s^2
-        radius - the radius of the platform
-        dt - timestep in seconds of the physics simulation
+        ----
+        brick: The (x,y,z) location of the brick
+        gravity: the acceleration due to gravity in m/s^2
+        radius: the radius of the platform
+        dt: timestep in seconds of the physics simulation
+
         """
         self._brick = brick
         self.gravity = gravity
@@ -26,7 +28,9 @@ class World:
         Get the brick's location.
 
         Return:
-            (x,y,z) location of the brick
+        ------
+        (x,y,z) location of the brick
+
         """
         return self._brick
 
@@ -36,7 +40,9 @@ class World:
         Set the brick's location.
 
         Args:
-           location - the (x,y,z) location of the brick
+        ----
+        location: the (x,y,z) location of the brick
+
         """
         self._brick[0] = location.x
         self._brick[1] = location.y

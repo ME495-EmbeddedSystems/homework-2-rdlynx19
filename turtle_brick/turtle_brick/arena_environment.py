@@ -4,9 +4,9 @@ import math
 from geometry_msgs.msg import Point, TransformStamped
 
 import rclpy
-import rclpy.time
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
+import rclpy.time
 
 import tf2_ros
 from tf2_ros import TransformBroadcaster
@@ -316,14 +316,17 @@ class Arena(Node):
                 self.get_logger().info(f'Extrapolation exception: {e}')
 
     def place_callback(self, request, response):
-        """Place the brick at a position.
+        """
+        Place the brick at a position.
 
         Args:
-                request(turtle_brick_interfaces/Place) : place request object
-                response(EmptyResponse) : empty response object
+        request(turtle_brick_interfaces/Place) : place request object
+        response(EmptyResponse) : empty response object
 
-            Returns:
-                An empty response object
+        Returns
+        -------
+        An empty response object
+
         """
         self.brick_physics.brick = request.brick_position
         self.flag = False
@@ -331,24 +334,30 @@ class Arena(Node):
         return response
 
     def drop_callback(self, request, response):
-        """Start dropping the brick in gravity.
+        """
+        Start dropping the brick in gravity.
 
         Args:
-                request(turtle_brick_interfaces/Drop) : drop request object
-                response(bool) : bool response
+        request(turtle_brick_interfaces/Drop) : drop request object
+        response(bool) : bool response
 
-            Returns:
-                 A bool response
+        Returns
+        -------
+        A bool response
+
         """
         self.flag = True
         return response
 
     def tilt_msg_callback(self, tilt_msg):
-        """Store the tilt angle of the platform.
+        """
+        Store the tilt angle of the platform.
 
         Args:
-                tilt_msg(turtle_brick_interfaces/Tilt) : the tilt angle for
-                the platform
+        ----
+        tilt_msg(turtle_brick_interfaces/Tilt) : the tilt angle for
+        the platform
+
         """
         self.tilt_angle = tilt_msg.tilt_angle
 

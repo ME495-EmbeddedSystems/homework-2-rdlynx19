@@ -47,14 +47,17 @@ def quaternion_from_euler(ai, aj, ak):
 
 
 def turtle_twist(linear_velocity, angular_velocity):
-    """Create a twist velocity suitable for a turtle.
+    """
+    Create a twist velocity suitable for a turtle.
 
     Args:
-        linear_vel (list of floats): the linear velocities
-        angular_vel (list of floats): the angular velocities
+    linear_vel (list of floats): the linear velocities
+    angular_vel (list of floats): the angular velocities
 
-    Returns:
-        Twist - a 2D twist object corresponding to linear/angular velocity
+    Returns
+    -------
+    Twist: a 2D twist object corresponding to linear/angular velocity
+
     """
     return Twist(
         linear=Vector3(
@@ -71,13 +74,14 @@ def calculate_euclidean_distance(current_pos, goal_pos):
     Calculate the distance between two points.
 
     Args:
-        current_pos (turtlesim/Pose): the current position of the turtle
-        current_waypoint (geometry_msgs/Point): the currently tracked
-        waypoint (the waypoint to be visited)
+    current_pos (turtlesim/Pose): the current position of the turtle
+    current_waypoint (geometry_msgs/Point): the currently tracked
+    waypoint (the waypoint to be visited)
 
-    Returns:
-        tol - a double value corresponding to the distance
-        between the current pose and current waypoint
+    Returns
+    -------
+    tol - a double value corresponding to the distance
+    between the current pose and current waypoint
 
     """
     tol = math.sqrt(
@@ -237,28 +241,37 @@ class Turtle_Robot(Node):
         self.current_velocity = cmd_twist
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
-        """Store the turtle's current pose.
+        """
+        Store the turtle's current pose.
 
         Args:
-            turtlesim_pose_msg (turtlesim/Pose) : the turtle's current pose
+        ----
+        turtlesim_pose_msg (turtlesim/Pose) : the turtle's current pose
+
         """
         self.turtlesim_current_pose = turtlesim_pose_msg
 
     def goal_pose_callback(self, goal_pose_msg):
-        """Store the msg for the /goal_pose topic subscription.
+        """
+        Store the msg for the /goal_pose topic subscription.
 
         Args:
-            goal_pose_msg (geometry_msg/PoseStamped) : the goal pose
-            for the turtle
+        ----
+        goal_pose_msg (geometry_msg/PoseStamped) : the goal pose
+        for the turtle
+
         """
         self.goal_pose = goal_pose_msg
 
     def tilt_msg_callback(self, tilt_msg):
-        """Store the tilt angle for the platform.
+        """
+        Store the tilt angle for the platform.
 
         Args:
-            tilt_msg (turtle_brick_interfaces/Tilt) : the tilt angle
-            for the platform
+        ----
+        tilt_msg (turtle_brick_interfaces/Tilt) : the tilt angle
+        for the platform
+
         """
         self.plat_tilt_angle = tilt_msg.tilt_angle
 
