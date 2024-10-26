@@ -9,8 +9,6 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped
 from builtin_interfaces.msg import Duration
-import time
-
 
 class Catcher(Node):
     """
@@ -50,7 +48,7 @@ class Catcher(Node):
 
     def tmr_to_brick_callback(self):
         """
-        Compute the time it will take to reach the brick
+        The timer to decide and command the robot to catch the brick
         """
         plat_height = self.get_parameter('platform_height').value
         wheel_radius = self.get_parameter('wheel_radius').value
@@ -101,10 +99,7 @@ class Catcher(Node):
             except tf2_ros.ExtrapolationException as e:
                 # the times are two far apart to extrapolate
                 self.get_logger().info(f'Extrapolation exception: {e}') 
-
-
-
-        
+ 
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
             self.get_logger().info(f'Lookup exception: {e}')
@@ -119,13 +114,11 @@ class Catcher(Node):
         self.iter += 1
         if (self.iter == 100):
             self.decision_flag = True
-            
-
-        
-        
-
+             
 
     def display_msg_marker(self):
+        """ Helper function for initialising the text marker
+        """
         self.m = Marker()
         self.m.header.frame_id = "world"
         self.m.header.stamp = self.get_clock().now().to_msg()
@@ -155,6 +148,11 @@ class Catcher(Node):
         self.marker_publisher.publish(self.m)
 
     def turtlesim_pose_callback(self, turtlesim_pose_msg):
+        """Callback function for the /turtle1/pose topic subscription
+
+            Args:
+                turtlesim_pose_msg (turtlesim/Pose) : the turtle's current pose
+        """
         self.turtlesim_current_pose = turtlesim_pose_msg
 
 
