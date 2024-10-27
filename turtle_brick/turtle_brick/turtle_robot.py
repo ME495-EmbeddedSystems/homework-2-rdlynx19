@@ -107,9 +107,9 @@ class Turtle_Robot(Node):
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 1)
 
         # Timers
-        self.turtle_tmr = self.create_timer(1 / 100, self.turtle_tmr_callback)
+        self.turtle_tmr = self.create_timer(1 / 250, self.turtle_tmr_callback)
         self.joint_state_tmr = self.create_timer(
-            1 / 100, self.joint_state_tmr_callback)
+            1 / 250, self.joint_state_tmr_callback)
         self.cmd_vel_tmr = self.create_timer(
             1 / 250, self.cmd_vel_tmr_callback)
 
@@ -206,7 +206,7 @@ class Turtle_Robot(Node):
 
         forward_velocity = self.turtlesim_current_pose.linear_velocity
 
-        self.wheel_joint_state += (forward_velocity)/(wheel_radius) * (1 / 100)
+        self.wheel_joint_state += (forward_velocity)/(wheel_radius) * (1 / 250)
 
         robot_joint_states.position = [
             self.plat_tilt_angle,

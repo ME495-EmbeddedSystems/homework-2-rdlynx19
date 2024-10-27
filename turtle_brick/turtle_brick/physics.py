@@ -21,7 +21,7 @@ class World:
         self.gravity = gravity
         self.platform_radius = radius
         self.time_step = dt
-
+        self.vel = 0.0
     @property
     def brick(self):
         """
@@ -50,18 +50,21 @@ class World:
 
     def drop(self):
         """Update the brick's location using gravity for one timestep."""
-        self._brick[2] = self._brick[2] - (self.gravity*self.time_step)*(
+        self.vel += self.gravity * self.time_step
+        self._brick[2] = self._brick[2] - (self.vel)*(
             self.time_step)
         # pass
 
-    def drop_brick_z(self, tilt_angle):
-        """Update the brick's location by falling from the platform."""
-        self._brick[0] = self._brick[0] - (self.gravity*(
-            math.sin(tilt_angle))*self.time_step)*self.time_step
-        self._brick[2] = self._brick[2] - (self.gravity*(
-            math.cos(tilt_angle))*self.time_step)*self.time_step
-
     def drop_brick_x(self, tilt_angle):
         """Update the brick's x location when falling from the platform."""
-        self._brick[0] = self._brick[0] - (self.gravity*(
-            math.sin(tilt_angle))*self.time_step)*(self.time_step)
+        # The velocity is wrong!!!!!
+        updated_gravity = self.gravity*abs(math.sin(tilt_angle))
+        self.vel += updated_gravity*self.time_step
+        if (math.sin(tilt_angle) < 0.0):
+            self._brick[0] = self._brick[0] -(self.vel)*(self.time_step)
+        else:
+            self._brick[0] = self._brick[0] +(self.vel)*(self.time_step)
+
+    def brick_caught(self):
+        """Set the brick velocity to zero when it is caught."""
+        self.vel = 0.0

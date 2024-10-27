@@ -5,6 +5,7 @@ from geometry_msgs.msg import Point, TransformStamped
 
 import rclpy
 from rclpy.node import Node
+import rclpy.parameter
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
 import rclpy.time
 
@@ -37,6 +38,7 @@ class Arena(Node):
             Marker, 'visualization_marker', markerQoS)
         self.brick_publisher = self.create_publisher(Marker,
                                                      'brick_marker', markerQoS)
+        self.drop_comms_publisher = self.create_publisher(Point, 'drop_status', 10)
 
         # Subscriber
         self.tilt_angle_subscriber = self.create_subscription(
@@ -47,6 +49,7 @@ class Arena(Node):
                                                            9.8)
         # gravity_acceleration = self.get_parameter("wheel_radius").value
         self.max_velocity = self.declare_parameter('max_velocity', 3.0)
+
 
         # Services
         self.drop_srv = self.create_service(Drop, 'drop', self.drop_callback)
@@ -64,12 +67,12 @@ class Arena(Node):
         self.brick_platform_listener = TransformListener(self.tf_buffer, self)
 
         # Initialising the physics World
-        self.current_brick_location = [4.0, 4.0, 8.0]
+        self.current_brick_location = [9.4, 9.4, 20.0]
         self.platform_radius = 0.3
         self.brick_physics = World([self.current_brick_location[0],
                                     self.current_brick_location[1],
                                     self.current_brick_location[2]],
-                                   9.8, self.platform_radius, 0.04)
+                                   9.8, self.platform_radius, 0.004)
 
         # Initialising and publishing the wall markers
         self.m = Marker()
@@ -167,7 +170,8 @@ class Arena(Node):
         self.flag = False
         self.move_brick = False
         self.move_brick_x = True
-        self.move_brick_z = True
+        self.move_brick_z = False
+        self.change_brick_parent = False
         self.tilt_angle = 0.0
 
         self.drop_client.call_async(Drop.Request())
@@ -176,52 +180,87 @@ class Arena(Node):
         """Compute the physics and transforms at 250Hz."""
         self.current_brick_location = self.brick_physics.brick
 
-        world_brick_tf = TransformStamped()
-        world_brick_tf.header.frame_id = 'world'
-        world_brick_tf.child_frame_id = 'brick'
-        world_brick_tf.header.stamp = self.get_clock().now().to_msg()
-        world_brick_tf.transform.translation.x = self.current_brick_location[0]
-        world_brick_tf.transform.translation.y = self.current_brick_location[1]
-        world_brick_tf.transform.translation.z = self.current_brick_location[2]
+        if(self.change_brick_parent is False):
+            world_brick_tf = TransformStamped()
+            world_brick_tf.header.frame_id = 'world'
+            world_brick_tf.child_frame_id = 'brick'
+            world_brick_tf.header.stamp = self.get_clock().now().to_msg()
+            world_brick_tf.transform.translation.x = self.current_brick_location[0]
+            world_brick_tf.transform.translation.y = self.current_brick_location[1]
+            world_brick_tf.transform.translation.z = self.current_brick_location[2]
 
-        try:
-            world_platform_lookup = self.tf_buffer.lookup_transform(
-                'platform', 'world', rclpy.time.Time())
-            platform_rotation = world_platform_lookup.transform.rotation
-            world_brick_tf.transform.rotation = platform_rotation
-        except tf2_ros.LookupException as e:
-            # the frames don't exist yet
-            self.get_logger().info(f'Lookup exception: {e}')
-        except tf2_ros.ConnectivityException as e:
-            # the tf tree has a disconnection
-            self.get_logger().info(f'Connectivity exception: {e}')
-        except tf2_ros.ExtrapolationException as e:
-            # the times are two far apart to extrapolate
-            self.get_logger().info(f'Extrapolation exception: {e}')
+            try:
+                world_platform_lookup = self.tf_buffer.lookup_transform(
+                    'world', 'platform', rclpy.time.Time())
+                platform_rotation = world_platform_lookup.transform.rotation
+                world_brick_tf.transform.rotation = platform_rotation
+            except tf2_ros.LookupException as e:
+                # the frames don't exist yet
+                self.get_logger().info(f'Lookup exception: {e}')
+            except tf2_ros.ConnectivityException as e:
+                # the tf tree has a disconnection
+                self.get_logger().info(f'Connectivity exception: {e}')
+            except tf2_ros.ExtrapolationException as e:
+                # the times are two far apart to extrapolate
+                self.get_logger().info(f'Extrapolation exception: {e}')
 
-        self.brick_tf_broadcaster.sendTransform(world_brick_tf)
+            self.brick_tf_broadcaster.sendTransform(world_brick_tf)
 
-        self.brick = Marker()
-        self.brick.header.frame_id = 'world'
-        self.brick.header.stamp = self.get_clock().now().to_msg()
-        self.brick.id = 5
-        self.brick.type = Marker.CUBE
-        self.brick.action = Marker.ADD
-        self.brick.scale.x = 0.3
-        self.brick.scale.y = 0.15
-        self.brick.scale.z = 0.15
-        self.brick.pose.position.x = self.current_brick_location[0]
-        self.brick.pose.position.y = self.current_brick_location[1]
-        self.brick.pose.position.z = self.current_brick_location[2]
-        self.brick.pose.orientation.x = world_brick_tf.transform.rotation.x
-        self.brick.pose.orientation.y = world_brick_tf.transform.rotation.y
-        self.brick.pose.orientation.z = world_brick_tf.transform.rotation.z
-        self.brick.pose.orientation.w = world_brick_tf.transform.rotation.w
-        self.brick.color.r = 1.0
-        self.brick.color.g = 0.0
-        self.brick.color.b = 0.0
-        self.brick.color.a = 1.0
-        self.brick_publisher.publish(self.brick)
+            self.brick = Marker()
+            self.brick.header.frame_id = 'world'
+            self.brick.header.stamp = self.get_clock().now().to_msg()
+            self.brick.id = 5
+            self.brick.type = Marker.CUBE
+            self.brick.action = Marker.ADD
+            self.brick.scale.x = 0.3
+            self.brick.scale.y = 0.15
+            self.brick.scale.z = 0.15
+            self.brick.pose.position.x = self.current_brick_location[0]
+            self.brick.pose.position.y = self.current_brick_location[1]
+            self.brick.pose.position.z = self.current_brick_location[2]
+            self.brick.pose.orientation.x = world_brick_tf.transform.rotation.x
+            self.brick.pose.orientation.y = world_brick_tf.transform.rotation.y
+            self.brick.pose.orientation.z = world_brick_tf.transform.rotation.z
+            self.brick.pose.orientation.w = world_brick_tf.transform.rotation.w
+            self.brick.color.r = 1.0
+            self.brick.color.g = 0.0
+            self.brick.color.b = 0.0
+            self.brick.color.a = 1.0
+            self.brick_publisher.publish(self.brick)
+
+        elif(self.change_brick_parent is True):
+            platform_brick_tf = TransformStamped()
+            platform_brick_tf.header.frame_id = 'platform'
+            platform_brick_tf.child_frame_id = 'brick'
+            platform_brick_tf.header.stamp = self.get_clock().now().to_msg()
+            platform_brick_tf.transform.translation.x = self.current_brick_location[0]
+            platform_brick_tf.transform.translation.y = self.current_brick_location[1]
+            platform_brick_tf.transform.translation.z = self.current_brick_location[2]
+
+            self.brick_tf_broadcaster.sendTransform(platform_brick_tf)
+
+            self.brick = Marker()
+            self.brick.header.frame_id = 'platform'
+            self.brick.header.stamp = self.get_clock().now().to_msg()
+            self.brick.id = 5
+            self.brick.type = Marker.CUBE
+            self.brick.action = Marker.ADD
+            self.brick.scale.x = 0.3
+            self.brick.scale.y = 0.15
+            self.brick.scale.z = 0.15
+            self.brick.pose.position.x = self.current_brick_location[0]
+            self.brick.pose.position.y = self.current_brick_location[1]
+            self.brick.pose.position.z = self.current_brick_location[2]
+            self.brick.pose.orientation.x = platform_brick_tf.transform.rotation.x
+            self.brick.pose.orientation.y = platform_brick_tf.transform.rotation.y
+            self.brick.pose.orientation.z = platform_brick_tf.transform.rotation.z
+            self.brick.pose.orientation.w = platform_brick_tf.transform.rotation.w
+            self.brick.color.r = 1.0
+            self.brick.color.g = 0.0
+            self.brick.color.b = 0.0
+            self.brick.color.a = 1.0
+            self.brick_publisher.publish(self.brick)
+
 
         try:
             brick_platform = self.tf_buffer.lookup_transform(
@@ -231,9 +270,11 @@ class Arena(Node):
             z_translation = brick_platform.transform.translation.z
             threshold_brick_platform = (
                 x_translation**2 + y_translation**2 + z_translation**2)**0.5
-            if (threshold_brick_platform <= 0.15):
+            if (threshold_brick_platform <= 0.25):
                 self.flag = False
                 self.move_brick = True
+                self.change_brick_parent = True
+                self.brick_physics.brick_caught()
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
             self.get_logger().info(f'Lookup exception: {e}')
@@ -260,9 +301,9 @@ class Arena(Node):
             # the times are two far apart to extrapolate
             self.get_logger().info(f'Extrapolation exception: {e}')
 
-        if (self.flag):
+        if (self.flag is True):
             self.brick_physics.drop()
-        elif (self.move_brick):
+        elif (self.move_brick is True):
             try:
 
                 world_platform_lookup = (
@@ -273,38 +314,37 @@ class Arena(Node):
                         or world_platform_lookup.transform.rotation.y != 0.0):
                     if (self.move_brick_x):
                         self.brick_physics.drop_brick_x(self.tilt_angle)
-                    if (self.move_brick_z):
-                        self.brick_physics.drop_brick_z(self.tilt_angle)
-
-                    world_brick_lookup = (
-                        self.tf_buffer.lookup_transform('world',
-                                                        'brick',
+                    
+                    brick_platform_lookup = (
+                        self.tf_buffer.lookup_transform('brick',
+                                                        'platform',
                                                         rclpy.time.Time()))
-
-                    z_displacement = (
-                        world_platform_lookup.transform.translation.z)
-                    - (world_brick_lookup.transform.translation.z)
-                    x_displacement = (
-                        world_platform_lookup.transform.translation.x)
-                    - (world_brick_lookup.transform.translation.x)
-                    if (z_displacement > (0.400 * math.sin(self.tilt_angle))):
-                        self.move_brick_z = False
-                    if (x_displacement > (0.400 * math.cos(self.tilt_angle))):
+ 
+                    if (brick_platform_lookup.transform.translation.x > 0.450 or brick_platform_lookup.transform.translation.x < -0.450):
                         self.move_brick_x = False
-                    if (self.move_brick_x is False and
-                            self.move_brick_z is False):
                         self.move_brick = False
+                        self.current_brick_location = self.brick_physics.brick
                 else:
-                    platform_location = Point()
-                    platform_location.x = (
-                        world_platform_lookup.transform.translation.x)
-                    platform_location.y = (
-                        world_platform_lookup.transform.translation.y)
-                    platform_location.z = (
-                        world_platform_lookup.transform.translation.z
-                        + 0.05 + 0.075)
-                    self.brick_physics.brick = platform_location
-                    self.current_brick_location = self.brick_physics.brick
+                    if(self.change_brick_parent is False):
+                        platform_location = Point()
+                        platform_location.x = (
+                            world_platform_lookup.transform.translation.x)
+                        platform_location.y = (
+                            world_platform_lookup.transform.translation.y)
+                        platform_location.z = (
+                            world_platform_lookup.transform.translation.z
+                            + 0.05 + 0.075)
+                        self.brick_physics.brick = platform_location
+                        self.current_brick_location = self.brick_physics.brick
+
+                    else:
+                        # self.get_logger().info("Brick changing!")
+                        brick_location = Point()
+                        brick_location.x = 0.0
+                        brick_location.y = 0.0
+                        brick_location.z = 0.05 + 0.075
+                        self.brick_physics.brick = brick_location
+                        self.current_brick_location = self.brick_physics.brick
             except tf2_ros.LookupException as e:
                 # the frames don't exist yet
                 self.get_logger().info(f'Lookup exception: {e}')
@@ -329,8 +369,18 @@ class Arena(Node):
 
         """
         self.brick_physics.brick = request.brick_position
+        self.current_brick_location = self.brick_physics.brick
         self.flag = False
         self.move_brick = False
+        self.change_brick_parent = False
+        world_brick_tf = TransformStamped()
+        world_brick_tf.header.frame_id = 'world'
+        world_brick_tf.child_frame_id = 'brick'
+        world_brick_tf.header.stamp = self.get_clock().now().to_msg()
+        world_brick_tf.transform.translation.x = self.current_brick_location[0]
+        world_brick_tf.transform.translation.y = self.current_brick_location[1]
+        world_brick_tf.transform.translation.z = self.current_brick_location[2]
+        self.brick_tf_broadcaster.sendTransform(world_brick_tf)
         return response
 
     def drop_callback(self, request, response):
@@ -347,6 +397,9 @@ class Arena(Node):
 
         """
         self.flag = True
+        drop_trigger = Point()
+        drop_trigger.x = 1.0
+        self.drop_comms_publisher.publish(drop_trigger)
         return response
 
     def tilt_msg_callback(self, tilt_msg):
