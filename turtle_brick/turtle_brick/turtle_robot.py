@@ -135,7 +135,7 @@ class Turtle_Robot(Node):
         world_odom_tf.transform.translation.x = 5.54
         world_odom_tf.transform.translation.y = 5.54
         self.static_world_broadcaster.sendTransform(world_odom_tf)
-        self.get_logger().info('Static Transfrom: world->odom')
+        
 
         # Parameters
         self.declare_parameter('wheel_radius', 0.15)

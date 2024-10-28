@@ -39,6 +39,7 @@ class Arena(Node):
         self.brick_publisher = self.create_publisher(Marker,
                                                      'brick_marker', markerQoS)
         self.drop_comms_publisher = self.create_publisher(Point, 'drop_status', 10)
+        self.tilt_angle_publisher = self.create_publisher(Tilt, 'platform_tilt_angle', 10)
 
         # Subscriber
         self.tilt_angle_subscriber = self.create_subscription(
@@ -67,7 +68,7 @@ class Arena(Node):
         self.brick_platform_listener = TransformListener(self.tf_buffer, self)
 
         # Initialising the physics World
-        self.current_brick_location = [9.4, 9.4, 20.0]
+        self.current_brick_location = [6.4, 6.4, 20.0]
         self.platform_radius = 0.3
         self.brick_physics = World([self.current_brick_location[0],
                                     self.current_brick_location[1],
@@ -174,7 +175,7 @@ class Arena(Node):
         self.change_brick_parent = False
         self.tilt_angle = 0.0
 
-        self.drop_client.call_async(Drop.Request())
+        # self.drop_client.call_async(Drop.Request())
 
     def physics_tmr_callback(self):
         """Compute the physics and transforms at 250Hz."""
@@ -196,13 +197,13 @@ class Arena(Node):
                 world_brick_tf.transform.rotation = platform_rotation
             except tf2_ros.LookupException as e:
                 # the frames don't exist yet
-                self.get_logger().info(f'Lookup exception: {e}')
+                self.get_logger().debug(f'Lookup exception: {e}')
             except tf2_ros.ConnectivityException as e:
                 # the tf tree has a disconnection
-                self.get_logger().info(f'Connectivity exception: {e}')
+                self.get_logger().debug(f'Connectivity exception: {e}')
             except tf2_ros.ExtrapolationException as e:
                 # the times are two far apart to extrapolate
-                self.get_logger().info(f'Extrapolation exception: {e}')
+                self.get_logger().debug(f'Extrapolation exception: {e}')
 
             self.brick_tf_broadcaster.sendTransform(world_brick_tf)
 
@@ -277,13 +278,13 @@ class Arena(Node):
                 self.brick_physics.brick_caught()
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
-            self.get_logger().info(f'Lookup exception: {e}')
+            self.get_logger().debug(f'Lookup exception: {e}')
         except tf2_ros.ConnectivityException as e:
             # the tf tree has a disconnection
-            self.get_logger().info(f'Connectivity exception: {e}')
+            self.get_logger().debug(f'Connectivity exception: {e}')
         except tf2_ros.ExtrapolationException as e:
             # the times are two far apart to extrapolate
-            self.get_logger().info(f'Extrapolation exception: {e}')
+            self.get_logger().debug(f'Extrapolation exception: {e}')
 
         try:
             odom_brick_lookup = self.tf_buffer.lookup_transform(
@@ -293,13 +294,13 @@ class Arena(Node):
                 self.flag = False
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
-            self.get_logger().info(f'Lookup exception: {e}')
+            self.get_logger().debug(f'Lookup exception: {e}')
         except tf2_ros.ConnectivityException as e:
             # the tf tree has a disconnection
-            self.get_logger().info(f'Connecticvity exception: {e}')
+            self.get_logger().debug(f'Connecticvity exception: {e}')
         except tf2_ros.ExtrapolationException as e:
             # the times are two far apart to extrapolate
-            self.get_logger().info(f'Extrapolation exception: {e}')
+            self.get_logger().debug(f'Extrapolation exception: {e}')
 
         if (self.flag is True):
             self.brick_physics.drop()
@@ -373,14 +374,9 @@ class Arena(Node):
         self.flag = False
         self.move_brick = False
         self.change_brick_parent = False
-        world_brick_tf = TransformStamped()
-        world_brick_tf.header.frame_id = 'world'
-        world_brick_tf.child_frame_id = 'brick'
-        world_brick_tf.header.stamp = self.get_clock().now().to_msg()
-        world_brick_tf.transform.translation.x = self.current_brick_location[0]
-        world_brick_tf.transform.translation.y = self.current_brick_location[1]
-        world_brick_tf.transform.translation.z = self.current_brick_location[2]
-        self.brick_tf_broadcaster.sendTransform(world_brick_tf)
+        resetTilt = Tilt()
+        resetTilt.tilt_angle = 0.0
+        self.tilt_angle_publisher.publish(resetTilt) 
         return response
 
     def drop_callback(self, request, response):

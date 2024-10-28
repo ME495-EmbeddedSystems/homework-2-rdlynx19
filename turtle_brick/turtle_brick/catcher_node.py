@@ -114,6 +114,7 @@ class Catcher(Node):
                                 world_brick_lookup.transform.translation.y
                                 )
                             self.goal_pose_publisher.publish(goal_pose)
+                            self.brick_drop_status = False
                             
             try:
                 brick_platform_lookup = self.tf_buffer.lookup_transform(
@@ -135,23 +136,23 @@ class Catcher(Node):
 
             except tf2_ros.LookupException as e:
                 # the frames don't exist yet
-                self.get_logger().info(f'Lookup exception: {e}')
+                self.get_logger().debug(f'Lookup exception: {e}')
             except tf2_ros.ConnectivityException as e:
                 # the tf tree has a disconnection
-                self.get_logger().info(f'Connectivity exception: {e}')
+                self.get_logger().debug(f'Connectivity exception: {e}')
             except tf2_ros.ExtrapolationException as e:
                 # the times are two far apart to extrapolate
-                self.get_logger().info(f'Extrapolation exception: {e}')
+                self.get_logger().debug(f'Extrapolation exception: {e}')
 
         except tf2_ros.LookupException as e:
             # the frames don't exist yet
-            self.get_logger().info(f'Lookup exception: {e}')
+            self.get_logger().debug(f'Lookup exception: {e}')
         except tf2_ros.ConnectivityException as e:
             # the tf tree has a disconnection
-            self.get_logger().info(f'Connecticvity exception: {e}')
+            self.get_logger().debug(f'Connecticvity exception: {e}')
         except tf2_ros.ExtrapolationException as e:
             # the times are two far apart to extrapolate
-            self.get_logger().info(f'Extrapolation exception: {e}')
+            self.get_logger().debug(f'Extrapolation exception: {e}')
 
         
 
@@ -207,6 +208,7 @@ class Catcher(Node):
         """
         if(drop_status_msg.x == 1.0):
             self.brick_drop_status = True
+            self.display_flag = True
 
 def catch_brick(args=None):
     """Spin the Catcher Node."""
