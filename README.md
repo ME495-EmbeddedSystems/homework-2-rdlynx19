@@ -10,6 +10,7 @@ Visualises an arena with a holonomic turtlebot, which catches a brick and drops 
    
 https://github.com/user-attachments/assets/09a923c5-6b5e-4a33-8129-4b686d6486cf
 
-5. Here is a video of the turtle when the brick cannot be caught
+4. Here is a video of the turtle when the brick cannot be caught
 
-   ${embed video here, it must be playable on github. Upload the video as an issue and link to it}
+https://github.com/user-attachments/assets/fd79645f-aebe-407b-ad21-7b1a84695f72
+
