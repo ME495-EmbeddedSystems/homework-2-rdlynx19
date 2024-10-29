@@ -79,6 +79,7 @@ class TestMyVelocity(unittest.TestCase):
         from the running process
 
         """
+        # ----------------- Begin_Citation [6] --------------- #
         available_topics = launch_testing_ros.WaitForTopics([(
             'cmd_vel', Twist)], timeout=10.0)
         available_topics.wait()
@@ -88,9 +89,12 @@ class TestMyVelocity(unittest.TestCase):
             if (time.time() - pre_time > 2.0):
                 self.fail('The test failed')
         post_time = time.time()
-        # assert post_time - pre_time > 0.95 or post_time - pre_time < 1.05
+        # ------------------ End_Citation [6] --------------- #
+        # ------------------ Begin_Citation [7] -------------- #
         self.assertEqual(post_time - pre_time > 0.9, True)
         self.assertEqual(post_time - pre_time < 1.1, True)
+        # ------------------ End_Citation [7] ---------------- #
+        
 
     def vel_callback(self, vel_msg):
         """Increase counter variable by one, when a msg is received."""

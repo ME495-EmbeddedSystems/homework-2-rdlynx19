@@ -23,7 +23,7 @@ class Catcher(Node):
     """Node to catch the brick."""
 
     def __init__(self):
-        """Initialise the member variables."""
+        """Initialise the member variables of the catcher."""
         super().__init__('catcher')
 
         self.max_vel = self.declare_parameter('max_velocity', 3.0)
@@ -40,7 +40,7 @@ class Catcher(Node):
             Point, 'drop_status', self.drop_status_callback, 1)
 
         self.turtlesim_pose_subscriber = self.create_subscription(
-            Pose, '/turtle1/pose', self.turtlesim_pose_callback, 1
+            Pose, 'turtle1/pose', self.turtlesim_pose_callback, 1
         )
 
         self.turtlesim_current_pose = Pose()

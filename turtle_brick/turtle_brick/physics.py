@@ -58,7 +58,6 @@ class World:
 
     def drop_brick_x(self, tilt_angle):
         """Update the brick's x location when falling from the platform."""
-        # The velocity is wrong!!!!!
         updated_gravity = self.gravity*abs(math.sin(tilt_angle))
         self.vel += updated_gravity*self.time_step
         if (math.sin(tilt_angle) < 0.0):

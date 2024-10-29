@@ -22,7 +22,19 @@ from turtlesim.msg import Pose
 
 
 def quaternion_from_euler(ai, aj, ak):
-    """Convert to quaternion from euler angles."""
+    """
+    Convert to quaternion from euler angles.
+    
+    Args:
+    ai (float(radians)): the roll angle
+    aj (float(radians)): the pitch angle
+    ak (float(radians)): the yaw angle
+
+    Returns
+    -------
+    q: a quaternion converted from the euler angles
+
+    """
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
@@ -96,7 +108,7 @@ class Turtle_Robot(Node):
     """The Turtle Robot Node."""
 
     def __init__(self):
-        """Initialise the member variables of the class."""
+        """Initialise the member variables of the turtle_robot class."""
         super().__init__('turtle_robot')
 
         # Publishers
@@ -115,7 +127,7 @@ class Turtle_Robot(Node):
 
         # Subscribers
         self.turtlesim_pose_subscriber = self.create_subscription(
-            Pose, '/turtle1/pose', self.turtlesim_pose_callback, 1
+            Pose, 'turtle1/pose', self.turtlesim_pose_callback, 1
         )
         self.goal_pose_subscriber = self.create_subscription(
             PoseStamped, 'goal_pose', self.goal_pose_callback, 1
@@ -224,11 +236,10 @@ class Turtle_Robot(Node):
         )
 
         self.base_stem_angle = angular_diff
-
-        # linear_velocity = 1.0
+        # ------------ Begin_Citation [5] ---------------#
         x_vel = linear_velocity * math.cos(angular_diff)
         y_vel = linear_velocity * math.sin(angular_diff)
-
+        # ------------ End_Citation [5] ----------------#
         cmd_twist = turtle_twist([x_vel, y_vel, 0.0], [0.0, 0.0, 0.0])
 
         if (

@@ -24,7 +24,7 @@ class Arena(Node):
     """The Arena Node."""
 
     def __init__(self):
-        """Initialise the member variables."""
+        """Initialise the member variables for the arena."""
         super().__init__('arena')
 
         # QoS Profile
@@ -174,7 +174,6 @@ class Arena(Node):
         self.change_brick_parent = False
         self.tilt_angle = 0.0
 
-        # self.drop_client.call_async(Drop.Request())
 
     def physics_tmr_callback(self):
         """Compute the physics and transforms at 250Hz."""

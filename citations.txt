@@ -1,8 +1,15 @@
-https://courses.lumenlearning.com/suny-osuniversityphysics/chapter/11-1-rolling-motion/
-rolling motion
+[1]Lumen Learning. "11.1 Rolling Motion | University Physics Volume 1", Courses, Available: https://courses.lumenlearning.com/suny-osuniversityphysics/chapter/11-1-rolling-motion/.
 
-https://answers.ros.org/question/212297/if-statement-in-launch-file/
-if statement in launch file
+[2]ROS Answers. "If statement in launch file - ROS Answers: Open Source Q", Answers, Available: https://answers.ros.org/question/212297/if-statement-in-launch-file/.
 
-https://answers.ros.org/question/396845/reading-from-yaml-file-in-xacro/
-loading yaml in xacro
+[3]Answers ROS. "Reading from yaml file in xacro? - ROS Answers: Open Source Q", Answers, Available: https://answers.ros.org/question/396845/reading-from-yaml-file-in-xacro/.
+
+[4]E. Matthes, "11 TESTING YOUR CODE - Python Crash Course, 2nd Edition [Book]", Learning, Available: https://learning.oreilly.com/library/view/python-crash-course/9781492071266/xhtml/ch11.xhtml#ch11lev1sec1.
+
+[5] Aditya Nair, 10/25/2024
+
+[6] David Khachatryan, 10/28/2024
+
+[7] Zhengxiao Han, 10/28/2024
+
+[8] Joe Blom, Grayson Snyder
