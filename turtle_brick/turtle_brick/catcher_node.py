@@ -29,7 +29,6 @@ class Catcher(Node):
         self.max_vel = self.declare_parameter('max_velocity', 3.0)
         self.platform_height = self.declare_parameter('platform_height', 0.8)
         self.wheel_radius = self.declare_parameter('wheel_radius', 0.15)
-      
 
         self.tmr_to_brick = self.create_timer(1/250,
                                               self.tmr_to_brick_callback)
@@ -37,7 +36,8 @@ class Catcher(Node):
         self.tf_buffer = Buffer()
         self.transform_listener = TransformListener(self.tf_buffer, self)
 
-        self.drop_status_subscriber = self.create_subscription(Point, 'drop_status', self.drop_status_callback, 1)
+        self.drop_status_subscriber = self.create_subscription(
+            Point, 'drop_status', self.drop_status_callback, 1)
 
         self.turtlesim_pose_subscriber = self.create_subscription(
             Pose, '/turtle1/pose', self.turtlesim_pose_callback, 1
@@ -55,9 +55,8 @@ class Catcher(Node):
         self.marker_publisher = self.create_publisher(
             Marker, 'text_marker', markerQoS)
 
-        self.tilt_angle_publisher = self.create_publisher(Tilt, 'platform_tilt_angle', 10)
-        
-  
+        self.tilt_angle_publisher = self.create_publisher(
+            Tilt, 'platform_tilt_angle', 10)
 
         self.display_flag = True
         self.brick_drop_status = False
@@ -74,62 +73,62 @@ class Catcher(Node):
             current_brick_height = world_brick_lookup.transform.translation.z
             brick_x = world_brick_lookup.transform.translation.x
             brick_y = world_brick_lookup.transform.translation.y
-     
 
             if (self.brick_drop_status is True):
-                    
-                    dist_to_platform = (current_brick_height
-                                        - (plat_height +
-                                           (wheel_radius*2) + 0.2))
 
-                    x_dist = (self.turtlesim_current_pose.x) - (
-                        brick_x
-                        )
-                    y_dist = (self.turtlesim_current_pose.y) - (
-                        brick_y
-                        )
+                dist_to_platform = (current_brick_height
+                                    - (plat_height +
+                                       (wheel_radius*2) + 0.2))
+                x_dist = (self.turtlesim_current_pose.x) - (
+                    brick_x
+                    )
+                y_dist = (self.turtlesim_current_pose.y) - (
+                    brick_y
+                    )
+                planar_dist_to_brick = ((x_dist)**2
+                                        + (y_dist)**2)**0.5
+                minimum_time_to_brick = planar_dist_to_brick/max_velocity
 
-                    planar_dist_to_brick = ((x_dist)**2
-                                            + (y_dist)**2)**0.5
+                if (dist_to_platform > 0.0):
+                    time_to_platform = ((dist_to_platform * 2)/9.8)**0.5
+                    if (time_to_platform < minimum_time_to_brick):
+                        if (self.display_flag is True):
+                            self.display_msg_marker()
+                            self.get_logger().info('Cant reach the brick')
+                            self.display_flag = False
+                    else:
+                        if (self.display_flag is True):
+                            self.get_logger().info('I can reach the brick!')
+                            self.display_flag = False
+                        goal_pose = PoseStamped()
+                        goal_pose.pose.position.x = (
+                            world_brick_lookup.transform.translation.x
+                            )
+                        goal_pose.pose.position.y = (
+                            world_brick_lookup.transform.translation.y
+                            )
+                        self.goal_pose_publisher.publish(goal_pose)
+                        self.brick_drop_status = False
 
-                    minimum_time_to_brick = planar_dist_to_brick/max_velocity
-
-                    if (dist_to_platform > 0.0):
-                        time_to_platform = ((dist_to_platform * 2)/9.8)**0.5
-                        if (time_to_platform < minimum_time_to_brick):
-
-                            if(self.display_flag is True):
-                                self.display_msg_marker()
-                                self.get_logger().info('Cant reach the brick')
-                                self.display_flag = False
-                        else:
-                            if(self.display_flag is True):
-                                self.get_logger().info("I can reach the brick!")
-                                self.display_flag = False
-                            goal_pose = PoseStamped()
-                            goal_pose.pose.position.x = (
-                                world_brick_lookup.transform.translation.x
-                                )
-                            goal_pose.pose.position.y = (
-                                world_brick_lookup.transform.translation.y
-                                )
-                            self.goal_pose_publisher.publish(goal_pose)
-                            self.brick_drop_status = False
-                            
             try:
                 brick_platform_lookup = self.tf_buffer.lookup_transform(
                     'brick', 'platform', rclpy.time.Time())
 
                 if (
-                    brick_platform_lookup.transform.translation.x == 0.0):
+                        brick_platform_lookup.transform.translation.x == 0.0):
                     center_pose = PoseStamped()
                     center_pose.pose.position.x = 5.54
                     center_pose.pose.position.y = 5.54
                     self.goal_pose_publisher.publish(center_pose)
                     self.brick_drop_status = False
-                    x_disp = abs(self.turtlesim_current_pose.x - center_pose.pose.position.x)
-                    y_disp = abs(self.turtlesim_current_pose.y - center_pose.pose.position.y)
-                    if(x_disp < 0.05 and y_disp < 0.05):
+                    x_disp = abs(
+                        (self.turtlesim_current_pose.x) -
+                        (center_pose.pose.position.x)
+                                 )
+                    y_disp = abs(
+                        (self.turtlesim_current_pose.y) -
+                        (center_pose.pose.position.y))
+                    if (x_disp < 0.05 and y_disp < 0.05):
                         tilt_cmd = Tilt()
                         tilt_cmd.tilt_angle = 0.707
                         self.tilt_angle_publisher.publish(tilt_cmd)
@@ -153,9 +152,6 @@ class Catcher(Node):
         except tf2_ros.ExtrapolationException as e:
             # the times are two far apart to extrapolate
             self.get_logger().debug(f'Extrapolation exception: {e}')
-
-        
-
 
     def display_msg_marker(self):
         """Initialise the text marker."""
@@ -205,10 +201,12 @@ class Catcher(Node):
         Args:
         ----
         drop_status_msg (geometry_msgs/Point) : the trigger for drop status
+
         """
-        if(drop_status_msg.x == 1.0):
+        if (drop_status_msg.x == 1.0):
             self.brick_drop_status = True
             self.display_flag = True
+
 
 def catch_brick(args=None):
     """Spin the Catcher Node."""

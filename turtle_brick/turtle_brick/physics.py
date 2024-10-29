@@ -22,6 +22,7 @@ class World:
         self.platform_radius = radius
         self.time_step = dt
         self.vel = 0.0
+
     @property
     def brick(self):
         """
@@ -61,9 +62,9 @@ class World:
         updated_gravity = self.gravity*abs(math.sin(tilt_angle))
         self.vel += updated_gravity*self.time_step
         if (math.sin(tilt_angle) < 0.0):
-            self._brick[0] = self._brick[0] -(self.vel)*(self.time_step)
+            self._brick[0] = self._brick[0] - (self.vel)*(self.time_step)
         else:
-            self._brick[0] = self._brick[0] +(self.vel)*(self.time_step)
+            self._brick[0] = self._brick[0] + (self.vel)*(self.time_step)
 
     def brick_caught(self):
         """Set the brick velocity to zero when it is caught."""

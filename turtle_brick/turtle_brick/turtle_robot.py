@@ -107,11 +107,11 @@ class Turtle_Robot(Node):
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 1)
 
         # Timers
-        self.turtle_tmr = self.create_timer(1 / 250, self.turtle_tmr_callback)
+        self.turtle_tmr = self.create_timer(1 / 100, self.turtle_tmr_callback)
         self.joint_state_tmr = self.create_timer(
-            1 / 250, self.joint_state_tmr_callback)
+            1 / 100, self.joint_state_tmr_callback)
         self.cmd_vel_tmr = self.create_timer(
-            1 / 250, self.cmd_vel_tmr_callback)
+            1 / 100, self.cmd_vel_tmr_callback)
 
         # Subscribers
         self.turtlesim_pose_subscriber = self.create_subscription(
@@ -135,7 +135,6 @@ class Turtle_Robot(Node):
         world_odom_tf.transform.translation.x = 5.54
         world_odom_tf.transform.translation.y = 5.54
         self.static_world_broadcaster.sendTransform(world_odom_tf)
-        
 
         # Parameters
         self.declare_parameter('wheel_radius', 0.15)
@@ -206,7 +205,7 @@ class Turtle_Robot(Node):
 
         forward_velocity = self.turtlesim_current_pose.linear_velocity
 
-        self.wheel_joint_state += (forward_velocity)/(wheel_radius) * (1 / 250)
+        self.wheel_joint_state += (forward_velocity)/(wheel_radius) * (1 / 100)
 
         robot_joint_states.position = [
             self.plat_tilt_angle,
@@ -218,6 +217,7 @@ class Turtle_Robot(Node):
 
     def cmd_vel_tmr_callback(self):
         """Command cmd_vel commands to the robot at 250Hz."""
+        linear_velocity = self.get_parameter('max_velocity').value
         angular_diff = math.atan2(
             self.goal_pose.pose.position.y - (self.turtlesim_current_pose.y),
             self.goal_pose.pose.position.x - (self.turtlesim_current_pose.x),
@@ -225,7 +225,7 @@ class Turtle_Robot(Node):
 
         self.base_stem_angle = angular_diff
 
-        linear_velocity = 3.0
+        # linear_velocity = 1.0
         x_vel = linear_velocity * math.cos(angular_diff)
         y_vel = linear_velocity * math.sin(angular_diff)
 
@@ -234,7 +234,7 @@ class Turtle_Robot(Node):
         if (
             calculate_euclidean_distance(self.turtlesim_current_pose,
                                          self.goal_pose)
-            < 0.05
+            < 0.10
         ):
             cmd_twist = turtle_twist([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
         self.cmd_vel_publisher.publish(cmd_twist)
