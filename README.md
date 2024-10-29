@@ -1,7 +1,7 @@
 # ME495 Embedded Systems Homework 2
 Author: Pushkar Dave
 
-Visualises an arena with a holonomic turtlebot, which attempts to catch a freefalling brick and drop it at the center of the arena.
+Visualises an arena in RViz with a holonomic turtlebot, which attempts to catch a freefalling brick and drop it at the center of the arena.
 
 ## Quickstart
 1. Use `ros2 launch turtle_brick turtle_arena.launch.xml` to start the arena and turtle simulation
