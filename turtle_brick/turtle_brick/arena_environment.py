@@ -1,4 +1,29 @@
-"""The Arena Node."""
+"""
+The Arena Node which visualises the arena and simulates the physics.
+
+Publishers
+----------
+ + /marker_publisher (visualisation_msgs/Marker) - The marker to visualise the walls
+ + /brick_publisher (visualisation_msgs/Marker) - The marker to visualise the brick
+ + /platform_tilt_angle (turtle_brick_interfaces/Tilt) - To reset the tilt angle of the platform
+ + /drop_status (geometry_msgs/Point) - To signal the status of the brick dropping
+
+Subscribers
+-----------
+ + /platform_tilt_angle (turtle_brick_interfaces/Tilt) - To obtain the tilt angle of the platform
+
+Parameters
+----------
++ /gravity_accel (float) - Acceleration due to gravity
++ /max_velocity (float) - Maximum translational velocity of the turtle robot
+
+Services
+--------
++ /drop (turtle_brick_interfaces/Drop) - To drop the brick in gravity
++ /place (turtle_brick_interfaces/Place) - To place the brick at an arbitrary position in space
+
+"""
+
 from geometry_msgs.msg import Point, TransformStamped
 
 import rclpy
@@ -48,7 +73,6 @@ class Arena(Node):
         # Parameters
         self.gravity_acceleration = self.declare_parameter('gravity_accel',
                                                            9.8)
-        # gravity_acceleration = self.get_parameter("wheel_radius").value
         self.max_velocity = self.declare_parameter('max_velocity', 3.0)
 
         # Services
@@ -173,7 +197,6 @@ class Arena(Node):
         self.move_brick_z = False
         self.change_brick_parent = False
         self.tilt_angle = 0.0
-
 
     def physics_tmr_callback(self):
         """Compute the physics and transforms at 250Hz."""

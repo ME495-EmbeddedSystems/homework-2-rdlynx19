@@ -1,4 +1,25 @@
-"""The Turtle Robot Node."""
+"""
+The Turtle Robot Node which bridges turtlesim and turtle robot.
+
+Publishers
+----------
+ + /joint_states (sensor_msgs/JointState) - The joint states of the turtle robot
+ + /cmd_vel (geometry_msgs/Twist) - The commanded velocity of the turtle robot
+ + /odom (nav_msgs/Odometry) - The Pose and Twist of the turtle robot relative to the odom frame
+
+Subscribers
+-----------
+ + /turtle1/pose (turtlesim/Pose) - To obtain the current pose and velocity of the turtlesim
+ + /goal_pose (geometry_msgs/PoseStamped) - To track the current goal pose of the turtle robot
+ + /platform_tilt_angle (turtle_brick_interfaces/Tilt) - To obtain the tilt angle of the platform
+
+Parameters
+----------
++ /wheel_radius (float) - Radius of the turtle bot's wheel
++ /max_velocity (float) - Maximum translational velocity of the turtle robot
+
+"""
+
 import math
 
 from geometry_msgs.msg import PoseStamped, Twist, Vector3
@@ -24,7 +45,7 @@ from turtlesim.msg import Pose
 def quaternion_from_euler(ai, aj, ak):
     """
     Convert to quaternion from euler angles.
-    
+
     Args:
     ai (float(radians)): the roll angle
     aj (float(radians)): the pitch angle

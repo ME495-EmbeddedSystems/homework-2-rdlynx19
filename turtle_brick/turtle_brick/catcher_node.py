@@ -1,4 +1,24 @@
-"""The Catcher Node."""
+"""
+The Catcher Node calculates the possibility of catching the falling brick.
+
+Publishers
+----------
+ + /marker_publisher (visualisation_msgs/Marker) - The marker to display the Unreachable message
+ + /platform_tilt_angle (turtle_brick_interfaces/Tilt) - The tilt angle for the platform
+ + /goal_pose_publisher (geometry_msgs/PoseStamepd) - The goal pose for the turtle robot
+
+Subscribers
+-----------
++ /turtle1/pose (turtlesim/Pose) - To obtain the current pose and velocity of the turtlesim
++ /drop_status (geometry_msgs/Point) - To track if the brick is falling
+
+Parameters
+----------
++ /platform_height (float) - The height of the platform above the ground
++ /max_velocity (float) - Maximum translational velocity of the turtle robot
++ /wheel_radius (float) - The radius of the robot's wheel
+
+"""
 from builtin_interfaces.msg import Duration
 
 from geometry_msgs.msg import Point, PoseStamped

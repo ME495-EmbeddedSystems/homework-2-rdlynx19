@@ -94,7 +94,6 @@ class TestMyVelocity(unittest.TestCase):
         self.assertEqual(post_time - pre_time > 0.9, True)
         self.assertEqual(post_time - pre_time < 1.1, True)
         # ------------------ End_Citation [7] ---------------- #
-        
 
     def vel_callback(self, vel_msg):
         """Increase counter variable by one, when a msg is received."""
