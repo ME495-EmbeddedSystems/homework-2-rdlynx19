@@ -12,7 +12,7 @@ def generate_launch_description():
     """Return launch description for desired nodes."""
     return LaunchDescription([
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
+            PythonLaunchDescriptionSource([ # unnecessary
                 PathJoinSubstitution([FindPackageShare
                                       ('turtle_brick'),
                                       'show_turtle.launch.py'])
